@@ -961,10 +961,19 @@ function renderHomeView() {
       () => setState("problematiquesActions"),
       "big",
       "problem-home-button",
-      { openProblems: openProblemsCount },
+      null,
       `Problématiques ouvertes : ${openProblemsCount}`
     )
   );
+
+  const suiviCountersSansProblem = {
+    critical: suiviCounters.critical,
+    warning: suiviCounters.warning,
+    control: suiviCounters.control,
+    celluleDefaut: suiviCounters.celluleDefaut,
+    celluleInhibee: suiviCounters.celluleInhibee,
+    controlePreventif: suiviCounters.controlePreventif
+  };
 
   appView.appendChild(
     createButton(
@@ -972,7 +981,7 @@ function renderHomeView() {
       () => setState("suiviHub"),
       "big",
       "secondary",
-      suiviCounters,
+      suiviCountersSansProblem,
       "Accès aux équipements"
     )
   );
