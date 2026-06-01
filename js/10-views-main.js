@@ -210,23 +210,99 @@ function createCountersFromInterventionRows(rows = []) {
 }
 
 function buildHomeDetailFamilyCounters() {
-  const familles = getHomeDetailFamilleFilters();
   const result = {};
 
-  familles.forEach((famille) => {
+  getHomeDetailFamilleFilters().forEach((famille) => {
     result[famille] = createEmptyCounters();
   });
 
-  if (typeof collectInterventionRows !== "function") {
-    return result;
-  }
+  const safeCount = (fn, fallback = createEmptyCounters()) => {
+    try {
+      return typeof fn === "function" ? normalizeCountersObject(fn()) : normalizeCountersObject(fallback);
+    } catch (error) {
+      console.warn("Compteur accueil indisponible", error);
+      return normalizeCountersObject(fallback);
+    }
+  };
 
-  const rows = collectInterventionRows(getHomeDetailEtatFilters(), familles);
+  const sumDirectCounters = (start, end, fn) => {
+    let total = createEmptyCounters();
+    if (typeof fn !== "function") return total;
 
-  familles.forEach((famille) => {
-    const familyRows = rows.filter((row) => (row?._familleDetail || row?._famille) === famille);
-    result[famille] = createCountersFromInterventionRows(familyRows);
+    for (let i = Number(start); i <= Number(end); i++) {
+      try {
+        total = addCounters(total, fn(i));
+      } catch (error) {
+        console.warn("Erreur compteur famille accueil", i, error);
+      }
+    }
+
+    return normalizeCountersObject(total);
+  };
+
+  const cellStates = typeof countCelluleStatesGlobal === "function"
+    ? countCelluleStatesGlobal()
+    : { defaut: 0, inhibee: 0, aControler: 0, controlePreventif: 0 };
+
+  result.cellule = normalizeCountersObject({
+    celluleDefaut: Number(cellStates.defaut) || 0,
+    celluleInhibee: Number(cellStates.inhibee) || 0,
+    control: Number(cellStates.aControler) || 0,
+    controlePreventif: Number(cellStates.controlePreventif) || 0
   });
+
+  result.chariot = sumDirectCounters(
+    CONFIG_APP.CHARIOT_MIN,
+    CONFIG_APP.CHARIOT_MAX,
+    typeof countChariotDirectCounters === "function" ? countChariotDirectCounters : null
+  );
+
+  result.groupeMoteur = safeCount(
+    typeof countAllGroupesMoteurCounters === "function" ? countAllGroupesMoteurCounters : null
+  );
+
+  let energyCounters = createEmptyCounters();
+  if (typeof countEnergyTrain1Counters === "function") {
+    energyCounters = addCounters(energyCounters, countEnergyTrain1Counters());
+  }
+  if (typeof countEnergyTrain2Counters === "function") {
+    energyCounters = addCounters(energyCounters, countEnergyTrain2Counters());
+  }
+  result.energybox = normalizeCountersObject(energyCounters);
+
+  result.injecteur = safeCount(
+    typeof countAllInjecteursCounters === "function" ? countAllInjecteursCounters : null
+  );
+
+  result.sortie = safeCount(
+    typeof countAllSortiesCounters === "function" ? countAllSortiesCounters : null
+  );
+
+  // Sécurité : on complète avec les lignes collectées du détail des anomalies.
+  // Cela évite qu'une donnée ancienne ou manuelle échappe aux compteurs par famille.
+  if (typeof collectInterventionRows === "function") {
+    try {
+      const familles = getHomeDetailFamilleFilters();
+      const rows = collectInterventionRows(getHomeDetailEtatFilters(), familles);
+
+      familles.forEach((famille) => {
+        const familyRows = rows.filter((row) => (row?._familleDetail || row?._famille) === famille);
+        const collected = normalizeCountersObject(createCountersFromInterventionRows(familyRows));
+        const current = normalizeCountersObject(result[famille] || createEmptyCounters());
+
+        result[famille] = normalizeCountersObject({
+          critical: Math.max(current.critical, collected.critical),
+          warning: Math.max(current.warning, collected.warning),
+          control: Math.max(current.control, collected.control),
+          celluleDefaut: Math.max(current.celluleDefaut, collected.celluleDefaut),
+          celluleInhibee: Math.max(current.celluleInhibee, collected.celluleInhibee),
+          controlePreventif: Math.max(current.controlePreventif, collected.controlePreventif)
+        });
+      });
+    } catch (error) {
+      console.warn("Collecte détail anomalies indisponible pour l'accueil", error);
+    }
+  }
 
   return result;
 }

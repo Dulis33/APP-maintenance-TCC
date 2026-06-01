@@ -20,6 +20,46 @@ function goHomeState() {
   renderHomeView();
 }
 
+
+function renderInterventionRouteSafe(stateData) {
+  const etatFilters = stateData.etatFilters || getDefaultInterventionEtatFilters();
+  const showManualForm = stateData.showManualForm === true;
+  const familleFilters = stateData.familleFilters || getDefaultInterventionFamilleFilters();
+
+  if (typeof renderInterventionView === "function") {
+    renderInterventionView(etatFilters, showManualForm, familleFilters);
+    return;
+  }
+
+  if (window.__loadingInterventionScript === true) {
+    const loading = document.createElement("div");
+    loading.className = "data-card";
+    loading.innerHTML = "<h2>Chargement du détail des anomalies…</h2><p>Le fichier js/08-intervention.js est en cours de rechargement.</p>";
+    appView.appendChild(loading);
+    return;
+  }
+
+  window.__loadingInterventionScript = true;
+
+  const loading = document.createElement("div");
+  loading.className = "data-card";
+  loading.innerHTML = "<h2>Chargement du détail des anomalies…</h2><p>Correction automatique du fichier de vue manquant.</p>";
+  appView.appendChild(loading);
+
+  const script = document.createElement("script");
+  script.src = `js/08-intervention.js?v=detail-fix-20260601-1-${Date.now()}`;
+  script.onload = () => {
+    window.__loadingInterventionScript = false;
+    renderCurrentState();
+  };
+  script.onerror = () => {
+    window.__loadingInterventionScript = false;
+    alert("Le fichier js/08-intervention.js est introuvable. Remplace le pack complet puis vide le cache du navigateur.");
+    goHomeState();
+  };
+  document.body.appendChild(script);
+}
+
 function updateTopbarTitle() {
   const titleEl = document.querySelector(".topbar h1");
   if (!titleEl) {
@@ -170,11 +210,7 @@ case "chariotPieces":
       break;
 
     case "intervention":
-      renderInterventionView(
-        stateData.etatFilters || getDefaultInterventionEtatFilters(),
-        stateData.showManualForm === true,
-        stateData.familleFilters || getDefaultInterventionFamilleFilters()
-      );
+      renderInterventionRouteSafe(stateData);
       break;
 
     case "cellulesTerrain":
