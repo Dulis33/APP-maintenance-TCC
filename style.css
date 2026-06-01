@@ -9,7 +9,7 @@
 }
 
 :root {
-  /* Palette principale */
+  /* Palette principale — mobile dark */
   --bg: #0f1923;
   --bg-secondary: #162030;
   --surface: #1c2b3a;
@@ -87,6 +87,48 @@
   --home-app-gap: 7px;
   --home-viewport-h: 100dvh;
   --home-content-zoom: 1;
+}
+
+/* =========================
+   PALETTE PC — PLUS CLAIRE
+   Sur grand écran, on allège le fond pour un rendu plus professionnel
+========================= */
+@media (min-width: 701px) {
+  :root {
+    --bg: #1a2535;
+    --bg-secondary: #1e2d40;
+    --surface: #243347;
+    --surface-soft: #223145;
+    --surface-raised: #2a3d54;
+    --surface-card: #263850;
+    --text: #edf2f8;
+    --text-soft: #8aaac8;
+    --text-muted: #5a7a98;
+    --border: rgba(255, 255, 255, 0.09);
+    --border-soft: rgba(255, 255, 255, 0.05);
+    --border-bright: rgba(255, 255, 255, 0.16);
+    --shadow-xs: 0 1px 4px rgba(0, 0, 0, 0.2);
+    --shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.18);
+    --shadow-md: 0 8px 28px rgba(0, 0, 0, 0.24);
+  }
+}
+
+@media (min-width: 1100px) {
+  :root {
+    --bg: #1e2d3e;
+    --bg-secondary: #233345;
+    --surface: #28394f;
+    --surface-soft: #263750;
+    --surface-raised: #2f4460;
+    --surface-card: #2b3f58;
+    --text: #eef3fa;
+    --text-soft: #90adc8;
+    --text-muted: #628098;
+    --border: rgba(255, 255, 255, 0.1);
+    --border-bright: rgba(255, 255, 255, 0.18);
+    --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.15);
+    --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.2);
+  }
 }
 
 html, body {
@@ -350,24 +392,28 @@ body {
   display: flex !important;
   flex-direction: row !important;
   flex-wrap: nowrap !important;
-  gap: 5px;
+  gap: 8px;
   width: 100%;
+  justify-content: center;
 }
 
 .cellule-grid .cellule-item,
 .cellule-grid .home-state-item {
-  flex: 1 1 0;
-  min-width: 0;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
 }
 
-/* Pastilles dans la ligne cellules : s'adaptent à l'espace disponible */
+/* Pastilles cellules : taille compacte fixe */
 .cellule-grid .legend-pill {
-  min-width: 0 !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  padding: 0 4px !important;
-  font-size: 10px !important;
-  height: 22px !important;
+  min-width: 52px !important;
+  max-width: 90px !important;
+  width: auto !important;
+  padding: 0 10px !important;
+  font-size: 11px !important;
+  height: 24px !important;
   white-space: nowrap;
 }
 
@@ -2305,14 +2351,17 @@ tr:focus-within {
     font-size: 12px;
   }
 
-  /* Pastilles dashboard : taille unifiée sur PC */
+  /* Pastilles dashboard PC : taille unifiée, non étirées */
   .dashboard-equipment-state-section .legend-pill,
   .cellule-grid .legend-pill,
   .equipment-state-grid .legend-pill {
-    height: 30px !important;
+    height: 28px !important;
+    min-width: 64px !important;
+    max-width: 120px !important;
+    width: auto !important;
     font-size: 12px !important;
-    padding: 0 8px !important;
-    border-radius: 8px !important;
+    padding: 0 14px !important;
+    border-radius: 7px !important;
   }
 
   .dashboard-equipment-state-section .legend-pill-dot {
@@ -2359,14 +2408,17 @@ tr:focus-within {
     font-size: 26px;
   }
 
-  /* Pastilles dashboard : taille unifiée sur grand écran */
+  /* Pastilles dashboard grand écran : bien proportionnées */
   .dashboard-equipment-state-section .legend-pill,
   .cellule-grid .legend-pill,
   .equipment-state-grid .legend-pill {
-    height: 34px !important;
+    height: 32px !important;
+    min-width: 72px !important;
+    max-width: 140px !important;
+    width: auto !important;
     font-size: 13px !important;
-    padding: 0 10px !important;
-    border-radius: 9px !important;
+    padding: 0 16px !important;
+    border-radius: 8px !important;
   }
 
   .dashboard-equipment-state-section .legend-pill-dot {
@@ -3226,23 +3278,28 @@ button.cellule-state-pill {
   display: flex !important;
   flex-direction: row !important;
   flex-wrap: nowrap !important;
-  gap: 6px;
+  gap: 8px;
   width: 100%;
+  justify-content: center;
 }
 
 .equipment-state-grid .home-state-item,
 .equipment-state-grid .legend-item {
-  flex: 1 1 0;
-  min-width: 0;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
 }
 
-/* Pastilles dans les autres familles : s'adaptent à l'espace */
+/* Pastilles équipements : taille compacte fixe */
 .equipment-state-grid .legend-pill {
-  min-width: 0 !important;
-  width: 100% !important;
-  padding: 0 4px !important;
-  font-size: 10px !important;
-  height: 22px !important;
+  min-width: 64px !important;
+  max-width: 110px !important;
+  width: auto !important;
+  padding: 0 12px !important;
+  font-size: 11px !important;
+  height: 24px !important;
   white-space: nowrap;
 }
 
