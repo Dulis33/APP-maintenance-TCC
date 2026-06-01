@@ -347,9 +347,28 @@ body {
 ========================= */
 
 .cellule-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  flex-wrap: nowrap;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  gap: 5px;
+  width: 100%;
+}
+
+.cellule-grid .cellule-item,
+.cellule-grid .home-state-item {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Pastilles dans la ligne cellules : s'adaptent à l'espace disponible */
+.cellule-grid .legend-pill {
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 0 4px !important;
+  font-size: 10px !important;
+  height: 22px !important;
+  white-space: nowrap;
 }
 
 .cellule-item {
@@ -358,10 +377,6 @@ body {
   align-items: center;
   justify-content: center;
 }
-
-/* =========================
-   BOUTONS — RESET GLOBAL
-========================= */
 
 .big-button,
 .medium-button,
@@ -2290,12 +2305,13 @@ tr:focus-within {
     font-size: 12px;
   }
 
-  /* Pastilles cellules : plus grandes sur PC */
-  .dashboard-equipment-state-section .legend-pill {
-    min-width: 68px !important;
-    height: 32px !important;
-    padding: 0 14px !important;
-    font-size: 13px !important;
+  /* Pastilles dashboard : taille unifiée sur PC */
+  .dashboard-equipment-state-section .legend-pill,
+  .cellule-grid .legend-pill,
+  .equipment-state-grid .legend-pill {
+    height: 30px !important;
+    font-size: 12px !important;
+    padding: 0 8px !important;
     border-radius: 8px !important;
   }
 
@@ -2312,7 +2328,7 @@ tr:focus-within {
   .dashboard-equipment-state-section .legend-item,
   .dashboard-equipment-state-section .home-state-item,
   .dashboard-equipment-state-section .cellule-item {
-    min-height: 54px !important;
+    min-height: 52px !important;
     gap: 6px !important;
   }
 
@@ -2343,12 +2359,13 @@ tr:focus-within {
     font-size: 26px;
   }
 
-  /* Pastilles cellules encore plus grandes sur grand écran */
-  .dashboard-equipment-state-section .legend-pill {
-    min-width: 80px !important;
-    height: 36px !important;
-    padding: 0 18px !important;
-    font-size: 14px !important;
+  /* Pastilles dashboard : taille unifiée sur grand écran */
+  .dashboard-equipment-state-section .legend-pill,
+  .cellule-grid .legend-pill,
+  .equipment-state-grid .legend-pill {
+    height: 34px !important;
+    font-size: 13px !important;
+    padding: 0 10px !important;
     border-radius: 9px !important;
   }
 
@@ -2446,12 +2463,7 @@ tr:focus-within {
   }
 }
 
-@media (max-width: 480px) {
-  .cellule-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
-  }
-}
+/* cellule-grid reste toujours en flex nowrap, 4 items sur une ligne */
 
 /* =========================
    IMPORT / EXPORT ACCUEIL
@@ -3211,8 +3223,27 @@ button.cellule-state-pill {
 }
 
 .equipment-state-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
   gap: 6px;
+  width: 100%;
+}
+
+.equipment-state-grid .home-state-item,
+.equipment-state-grid .legend-item {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Pastilles dans les autres familles : s'adaptent à l'espace */
+.equipment-state-grid .legend-pill {
+  min-width: 0 !important;
+  width: 100% !important;
+  padding: 0 4px !important;
+  font-size: 10px !important;
+  height: 22px !important;
+  white-space: nowrap;
 }
 
 .home-state-item {
