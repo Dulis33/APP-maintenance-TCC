@@ -349,6 +349,7 @@ body {
 .cellule-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
+  flex-wrap: nowrap;
 }
 
 .cellule-item {
@@ -2288,6 +2289,41 @@ tr:focus-within {
   .legend-label {
     font-size: 12px;
   }
+
+  /* Pastilles cellules : plus grandes sur PC */
+  .dashboard-equipment-state-section .legend-pill {
+    min-width: 68px !important;
+    height: 32px !important;
+    padding: 0 14px !important;
+    font-size: 13px !important;
+    border-radius: 8px !important;
+  }
+
+  .dashboard-equipment-state-section .legend-pill-dot {
+    width: 7px !important;
+    height: 7px !important;
+  }
+
+  .dashboard-equipment-state-section .legend-label {
+    font-size: 12px !important;
+    font-weight: 700 !important;
+  }
+
+  .dashboard-equipment-state-section .legend-item,
+  .dashboard-equipment-state-section .home-state-item,
+  .dashboard-equipment-state-section .cellule-item {
+    min-height: 54px !important;
+    gap: 6px !important;
+  }
+
+  .dashboard-equipment-state-section {
+    padding: 12px 14px !important;
+    gap: 8px !important;
+  }
+
+  .dashboard-equipment-state-section .legend-title {
+    font-size: 12px !important;
+  }
 }
 
 @media (min-width: 1400px) {
@@ -2305,6 +2341,40 @@ tr:focus-within {
 
   .topbar h1 {
     font-size: 26px;
+  }
+
+  /* Pastilles cellules encore plus grandes sur grand écran */
+  .dashboard-equipment-state-section .legend-pill {
+    min-width: 80px !important;
+    height: 36px !important;
+    padding: 0 18px !important;
+    font-size: 14px !important;
+    border-radius: 9px !important;
+  }
+
+  .dashboard-equipment-state-section .legend-pill-dot {
+    width: 8px !important;
+    height: 8px !important;
+  }
+
+  .dashboard-equipment-state-section .legend-label {
+    font-size: 13px !important;
+  }
+
+  .dashboard-equipment-state-section .legend-item,
+  .dashboard-equipment-state-section .home-state-item,
+  .dashboard-equipment-state-section .cellule-item {
+    min-height: 60px !important;
+    gap: 7px !important;
+  }
+
+  .dashboard-equipment-state-section {
+    padding: 14px 16px !important;
+    gap: 10px !important;
+  }
+
+  .dashboard-equipment-state-section .legend-title {
+    font-size: 13px !important;
   }
 }
 
@@ -3162,10 +3232,10 @@ button.cellule-state-pill {
 }
 
 @media (max-width: 390px) {
-  .equipment-state-grid,
-  .cellule-grid {
+  .equipment-state-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  /* cellule-grid reste toujours en 4 colonnes */
 }
 
 /* =========================
