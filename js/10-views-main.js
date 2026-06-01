@@ -966,13 +966,16 @@ function renderHomeView() {
     )
   );
 
+  // Compteurs TCC pièces (chariots, groupes moteurs, injecteurs, sorties)
+  const tccPiecesCounters = normalizeCountersObject(countTccRawCounters());
   const suiviCountersSansProblem = {
     critical: suiviCounters.critical,
     warning: suiviCounters.warning,
     control: suiviCounters.control,
     celluleDefaut: suiviCounters.celluleDefaut,
     celluleInhibee: suiviCounters.celluleInhibee,
-    controlePreventif: suiviCounters.controlePreventif
+    // Préventif = cellules + pièces TCC
+    controlePreventif: (suiviCounters.controlePreventif || 0) + (tccPiecesCounters.controlePreventif || 0)
   };
 
   appView.appendChild(
