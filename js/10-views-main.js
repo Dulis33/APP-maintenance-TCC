@@ -966,16 +966,25 @@ function renderHomeView() {
     )
   );
 
-  // Compteurs TCC pièces (chariots, groupes moteurs, injecteurs, sorties)
-  const tccPiecesCounters = normalizeCountersObject(countTccRawCounters());
+  // Utilise buildHomeDetailFamilyCounters qui agrège TOUTES les familles correctement
+  const allFamilyCounters = buildHomeDetailFamilyCounters();
+  const allFamilies = ["cellule", "chariot", "groupeMoteur", "energybox", "injecteur", "sortie"];
+  let totalPreventif = 0;
+  let totalCritical = suiviCounters.critical;
+  let totalWarning = suiviCounters.warning;
+  let totalControl = suiviCounters.control;
+  allFamilies.forEach((famille) => {
+    const fc = normalizeCountersObject(allFamilyCounters[famille] || {});
+    totalPreventif += fc.controlePreventif || 0;
+  });
+
   const suiviCountersSansProblem = {
-    critical: suiviCounters.critical,
-    warning: suiviCounters.warning,
-    control: suiviCounters.control,
+    critical: totalCritical,
+    warning: totalWarning,
+    control: totalControl,
     celluleDefaut: suiviCounters.celluleDefaut,
     celluleInhibee: suiviCounters.celluleInhibee,
-    // Préventif = cellules + pièces TCC
-    controlePreventif: (suiviCounters.controlePreventif || 0) + (tccPiecesCounters.controlePreventif || 0)
+    controlePreventif: totalPreventif
   };
 
   appView.appendChild(
