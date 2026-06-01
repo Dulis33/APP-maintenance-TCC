@@ -966,25 +966,23 @@ function renderHomeView() {
     )
   );
 
-  // Utilise buildHomeDetailFamilyCounters qui agrège TOUTES les familles correctement
-  const allFamilyCounters = buildHomeDetailFamilyCounters();
-  const allFamilies = ["cellule", "chariot", "groupeMoteur", "energybox", "injecteur", "sortie"];
-  let totalPreventif = 0;
-  let totalCritical = suiviCounters.critical;
-  let totalWarning = suiviCounters.warning;
-  let totalControl = suiviCounters.control;
-  allFamilies.forEach((famille) => {
-    const fc = normalizeCountersObject(allFamilyCounters[famille] || {});
-    totalPreventif += fc.controlePreventif || 0;
-  });
+  // Préventif total = cellules + toutes pièces TCC (countTccRawCounters inclut
+  // chariots directs via countTrieurCounters → countTrain1/2 → countChariotDirectCounters)
+  const cellStatesForPreventif = typeof countCelluleStatesGlobal === "function"
+    ? countCelluleStatesGlobal()
+    : { controlePreventif: 0 };
+  const tccForPreventif = normalizeCountersObject(
+    typeof countTccRawCounters === "function" ? countTccRawCounters() : {}
+  );
 
   const suiviCountersSansProblem = {
-    critical: totalCritical,
-    warning: totalWarning,
-    control: totalControl,
+    critical: suiviCounters.critical,
+    warning: suiviCounters.warning,
+    control: suiviCounters.control,
     celluleDefaut: suiviCounters.celluleDefaut,
     celluleInhibee: suiviCounters.celluleInhibee,
-    controlePreventif: totalPreventif
+    controlePreventif: (Number(cellStatesForPreventif?.controlePreventif) || 0)
+      + (tccForPreventif.controlePreventif || 0)
   };
 
   appView.appendChild(
