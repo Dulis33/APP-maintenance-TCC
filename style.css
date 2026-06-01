@@ -93,7 +93,7 @@
    PALETTE PC — THÈME CLAIR
    Fond blanc cassé professionnel sur grand écran
 ========================= */
-@media (min-width: 701px) {
+@media (min-width: 1024px) {
   :root {
     --bg: #f0f4f8;
     --bg-secondary: #e8eef5;
@@ -3003,16 +3003,16 @@ button.cellule-state-pill {
 .big-button.home-detail-anomalies-button {
   border: 1px solid var(--border-bright);
   background: linear-gradient(145deg, #1e3a5f, #0f1f30);
-  color: var(--text);
+  color: #fff;
   box-shadow: var(--shadow-md);
 }
 
 .big-button.home-detail-anomalies-button .button-subtext {
-  color: var(--text-soft);
+  color: rgba(255, 255, 255, 0.65);
 }
 
 .big-button.home-detail-anomalies-button:hover {
-  border-color: rgba(74, 144, 196, 0.25);
+  border-color: rgba(74, 144, 196, 0.4);
 }
 
 .home-import-export-block {
