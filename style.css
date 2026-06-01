@@ -392,7 +392,7 @@ body {
   display: flex !important;
   flex-direction: row !important;
   flex-wrap: nowrap !important;
-  gap: 8px;
+  gap: 12px;
   width: 100%;
   justify-content: center;
 }
@@ -408,12 +408,12 @@ body {
 
 /* Pastilles cellules : taille compacte fixe */
 .cellule-grid .legend-pill {
-  min-width: 52px !important;
-  max-width: 90px !important;
+  min-width: 70px !important;
+  max-width: 120px !important;
   width: auto !important;
-  padding: 0 10px !important;
+  padding: 0 14px !important;
   font-size: 11px !important;
-  height: 24px !important;
+  height: 26px !important;
   white-space: nowrap;
 }
 
@@ -3278,7 +3278,7 @@ button.cellule-state-pill {
   display: flex !important;
   flex-direction: row !important;
   flex-wrap: nowrap !important;
-  gap: 8px;
+  gap: 12px;
   width: 100%;
   justify-content: center;
 }
@@ -3294,12 +3294,12 @@ button.cellule-state-pill {
 
 /* Pastilles équipements : taille compacte fixe */
 .equipment-state-grid .legend-pill {
-  min-width: 64px !important;
-  max-width: 110px !important;
+  min-width: 80px !important;
+  max-width: 130px !important;
   width: auto !important;
-  padding: 0 12px !important;
+  padding: 0 16px !important;
   font-size: 11px !important;
-  height: 24px !important;
+  height: 26px !important;
   white-space: nowrap;
 }
 
@@ -3575,6 +3575,7 @@ button.cellule-state-pill {
   --home-admin-sub-size: 8px;
 }
 
+/* Lock scroll uniquement sur mobile */
 body.home-screen-fit {
   min-height: 100svh;
   overflow: hidden;
@@ -3607,6 +3608,28 @@ body.home-screen-fit #appView:has(.problem-home-button) {
   min-height: 0;
   justify-content: space-between;
   overflow: hidden;
+}
+
+/* Sur PC : on annule le lock et on laisse scroller librement */
+@media (min-width: 701px) {
+  body.home-screen-fit,
+  body.home-screen-fit .app-shell,
+  body.home-screen-fit .main-content,
+  body.home-screen-fit #appView:has(.problem-home-button) {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  body.home-screen-fit .app-shell {
+    display: flex;
+    flex-direction: column;
+  }
+
+  body.home-screen-fit .main-content {
+    flex: 1 1 auto;
+  }
 }
 
 body.home-screen-fit #appView:has(.problem-home-button) > .big-button.home-detail-anomalies-button,
@@ -3735,6 +3758,19 @@ body.home-screen-fit .main-content {
   overflow: hidden !important;
   padding-left: clamp(7px, 2vw, 12px) !important;
   padding-right: clamp(7px, 2vw, 12px) !important;
+}
+
+/* Sur PC, annuler tous les locks de scroll */
+@media (min-width: 701px) {
+  body.home-screen-fit .app-shell {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  body.home-screen-fit .main-content {
+    overflow: visible !important;
+  }
 }
 
 body.home-screen-fit #printZone {
