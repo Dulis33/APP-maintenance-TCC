@@ -1,0 +1,20 @@
+INSTALLATION OFFLINE AUTONOME - SUIVI TCC
+
+But : ouvrir l'appli depuis l'icône même quand Acode est fermé.
+
+1) Remplacer TOUS les fichiers de ton dossier par ceux de ce pack.
+2) Dans Acode, lancer le serveur local / preview comme d'habitude.
+3) Ouvrir Chrome sur : http://localhost:8158/index.htm
+4) Attendre 15 secondes sur la page d'accueil.
+5) Recharger la page 2 fois.
+6) Menu Chrome > Installer l'application / Ajouter à l'écran d'accueil.
+7) Ouvrir une première fois l'icône pendant que Acode est encore ouvert.
+8) Fermer complètement Chrome et Acode.
+9) Ouvrir l'icône installée.
+
+Si ça ne marche pas :
+- Supprimer l'ancienne icône de l'écran d'accueil.
+- Chrome > menu > Supprimer les données du site localhost.
+- Relancer Acode, rouvrir http://localhost:8158/index.htm et réinstaller.
+
+Le fichier important est sw.js. Il sert maintenant d'abord l'accueil depuis le cache.

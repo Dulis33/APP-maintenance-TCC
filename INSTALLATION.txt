@@ -1,0 +1,31 @@
+INSTALLATION PWA - SUIVI TCC
+
+Structure obligatoire :
+- index.htm ou index.html à la racine
+- manifest.json à la racine
+- sw.js à la racine
+- dossier icons à la racine avec les fichiers icon-192.png et icon-512.png
+- dossier js à la racine
+
+Sur téléphone avec Acode :
+1. Remplace tout le dossier par le contenu de ce pack.
+2. Lance l’aperçu Acode en serveur local.
+3. Ouvre Chrome sur http://localhost:8158/index.htm
+4. Ouvre ces trois liens pour vérifier :
+   http://localhost:8158/manifest.json
+   http://localhost:8158/sw.js
+   http://localhost:8158/icons/icon-192.png
+5. Si les trois s’ouvrent, recharge la page deux fois.
+6. Menu Chrome > Installer l’application.
+
+Si Chrome propose encore "Créer un raccourci" :
+- Menu Chrome > Supprimer les données... pour ce site localhost
+- ferme Chrome complètement
+- relance Acode puis recharge http://localhost:8158/index.htm
+
+Sur PC :
+1. Place le dossier sur le PC.
+2. Dans le dossier, ouvre cmd.
+3. Tape : py -m http.server 8000
+4. Ouvre : http://localhost:8000/index.htm
+5. Chrome/Edge doit proposer Installer l’application.
