@@ -3575,60 +3575,40 @@ button.cellule-state-pill {
   --home-admin-sub-size: 8px;
 }
 
-/* Lock scroll uniquement sur mobile */
-body.home-screen-fit {
-  min-height: 100svh;
-  overflow: hidden;
-}
-
-body.home-screen-fit .app-shell {
-  height: 100svh;
-  height: 100dvh;
-  min-height: 0 !important;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-body.home-screen-fit .main-content {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: hidden;
-}
-
-body.home-screen-fit #printZone {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-body.home-screen-fit #appView:has(.problem-home-button) {
-  flex: 1 1 auto;
-  min-height: 0;
-  justify-content: space-between;
-  overflow: hidden;
-}
-
-/* Sur PC : on annule le lock et on laisse scroller librement */
-@media (min-width: 701px) {
-  body.home-screen-fit,
-  body.home-screen-fit .app-shell,
-  body.home-screen-fit .main-content,
-  body.home-screen-fit #appView:has(.problem-home-button) {
-    height: auto !important;
-    max-height: none !important;
-    min-height: 0 !important;
-    overflow: visible !important;
+/* Lock scroll uniquement sur mobile (max 700px) */
+@media (max-width: 700px) {
+  body.home-screen-fit {
+    min-height: 100svh;
+    overflow: hidden;
   }
 
   body.home-screen-fit .app-shell {
+    height: 100svh;
+    height: 100dvh;
+    min-height: 0 !important;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
   }
 
   body.home-screen-fit .main-content {
     flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  body.home-screen-fit #printZone {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  body.home-screen-fit #appView:has(.problem-home-button) {
+    flex: 1 1 auto;
+    min-height: 0;
+    justify-content: space-between;
+    overflow: hidden;
   }
 }
 
@@ -3748,28 +3728,20 @@ body.home-screen-fit #appView:has(.problem-home-button) .button-subtext {
   --home-content-zoom: 1;
 }
 
-body.home-screen-fit .app-shell {
-  height: var(--home-viewport-h) !important;
-  max-height: var(--home-viewport-h) !important;
-  overflow: hidden !important;
-}
-
 body.home-screen-fit .main-content {
-  overflow: hidden !important;
   padding-left: clamp(7px, 2vw, 12px) !important;
   padding-right: clamp(7px, 2vw, 12px) !important;
 }
 
-/* Sur PC, annuler tous les locks de scroll */
-@media (min-width: 701px) {
+@media (max-width: 700px) {
   body.home-screen-fit .app-shell {
-    height: auto !important;
-    max-height: none !important;
-    overflow: visible !important;
+    height: var(--home-viewport-h) !important;
+    max-height: var(--home-viewport-h) !important;
+    overflow: hidden !important;
   }
 
   body.home-screen-fit .main-content {
-    overflow: visible !important;
+    overflow: hidden !important;
   }
 }
 
