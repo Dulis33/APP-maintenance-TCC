@@ -2596,8 +2596,76 @@ tr:focus-within {
 /* cellule-grid reste toujours en flex nowrap, 4 items sur une ligne */
 
 /* =========================
-   IMPORT / EXPORT ACCUEIL
+   BARRE D'ACTIONS TABLEAU DE PIÈCES
 ========================= */
+
+.parts-table-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.parts-table-action-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.parts-action-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  flex: 1 1 auto;
+}
+
+.parts-action-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+
+.parts-action-btn {
+  width: auto !important;
+  min-height: 34px !important;
+  padding: 0 14px !important;
+  font-size: 12px !important;
+  white-space: nowrap;
+}
+
+.parts-preventif-done-btn {
+  background: linear-gradient(135deg, #48bb78, #276749) !important;
+  box-shadow: 0 3px 10px rgba(39, 103, 73, 0.4) !important;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 600px) {
+  .parts-table-action-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .parts-action-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .parts-action-label {
+    font-size: 11px;
+  }
+
+  .parts-action-btn {
+    width: 100% !important;
+    min-height: 40px !important;
+  }
+}
 
 .home-import-export-block {
   display: grid;
