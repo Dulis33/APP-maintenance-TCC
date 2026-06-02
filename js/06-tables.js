@@ -284,67 +284,6 @@ function getTodayDateString() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-function createPartsTableActions(safeRows) {
-  const bar = document.createElement("div");
-  bar.className = "parts-table-action-bar";
-
-  // --- Appliquer une date de contrôle à toutes les lignes ---
-  const applyDateWrap = document.createElement("div");
-  applyDateWrap.className = "parts-action-group";
-
-  const applyLabel = document.createElement("span");
-  applyLabel.className = "parts-action-label";
-  applyLabel.textContent = "Date contrôle → toutes les lignes :";
-
-  const applyDateInput = document.createElement("input");
-  applyDateInput.type = "date";
-  applyDateInput.className = "date-input";
-  applyDateInput.value = getTodayDateString();
-
-  const applyDateBtn = document.createElement("button");
-  applyDateBtn.type = "button";
-  applyDateBtn.className = "model-save-button parts-action-btn";
-  applyDateBtn.textContent = "Appliquer";
-  applyDateBtn.onclick = (e) => {
-    e.preventDefault();
-    const dateVal = applyDateInput.value;
-    if (!dateVal) return;
-    safeRows.forEach((row) => {
-      if (row) updateDateCtrl(row, dateVal);
-    });
-    saveAll();
-    renderCurrentState();
-  };
-
-  applyDateWrap.appendChild(applyLabel);
-  applyDateWrap.appendChild(applyDateInput);
-  applyDateWrap.appendChild(applyDateBtn);
-
-  // --- Préventif effectué ---
-  const preventifBtn = document.createElement("button");
-  preventifBtn.type = "button";
-  preventifBtn.className = "model-save-button parts-action-btn parts-preventif-done-btn";
-  preventifBtn.textContent = "✓ Préventif effectué";
-  preventifBtn.title = "Applique la date du jour à toutes les lignes et décoche le flag Préventif";
-  preventifBtn.onclick = (e) => {
-    e.preventDefault();
-    const today = getTodayDateString();
-    safeRows.forEach((row) => {
-      if (row) {
-        updateDateCtrl(row, today);
-        row.controlePreventif = false;
-      }
-    });
-    saveAll();
-    renderCurrentState();
-  };
-
-  bar.appendChild(applyDateWrap);
-  bar.appendChild(preventifBtn);
-
-  return bar;
-}
-
 function createPartsTable(model, rows) {
   const safeModel = Array.isArray(model) ? model : [];
   const safeRows = Array.isArray(rows) ? rows : [];
@@ -352,11 +291,64 @@ function createPartsTable(model, rows) {
   const container = document.createElement("div");
   container.className = "parts-table-container";
 
-  // Barre d'actions au-dessus du tableau
-  if (safeModel.length > 0) {
-    container.appendChild(createPartsTableActions(safeRows));
+  if (safeModel.length === 0) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "table-wrapper";
+    const table = document.createElement("table");
+    table.className = "parts-table";
+    table.appendChild(createTableHead(["Pièce","Référence","Repère","Date de changement","Date de contrôle","Critique","À prévoir","Contrôle préventif"]));
+    const tbody = document.createElement("tbody");
+    tbody.appendChild(createEmptyTableRow(8, "Aucune ligne définie."));
+    table.appendChild(tbody);
+    wrapper.appendChild(table);
+    container.appendChild(wrapper);
+    return container;
   }
 
+  // =====================
+  // BARRE PRÉVENTIF
+  // =====================
+  const bar = document.createElement("div");
+  bar.className = "parts-table-action-bar";
+
+  // Ligne 1 : Préventif complet + sélecteur date + Valider
+  const row1 = document.createElement("div");
+  row1.className = "parts-action-row";
+
+  // Bouton "Préventif complet"
+  const btnComplet = document.createElement("button");
+  btnComplet.type = "button";
+  btnComplet.className = "parts-action-btn parts-preventif-complet-btn";
+  btnComplet.textContent = "📋 Préventif complet";
+  btnComplet.title = "Coche le préventif sur toutes les lignes";
+
+  // Sélecteur de date (défaut = aujourd'hui)
+  const dateInput = document.createElement("input");
+  dateInput.type = "date";
+  dateInput.className = "date-input parts-date-input";
+  dateInput.value = getTodayDateString();
+
+  // Bouton "✓ Valider les préventifs cochés"
+  const btnValider = document.createElement("button");
+  btnValider.type = "button";
+  btnValider.className = "parts-action-btn parts-preventif-done-btn";
+  btnValider.textContent = "✓ Valider les préventifs cochés";
+  btnValider.title = "Applique la date choisie aux lignes cochées en Préventif et les décoche";
+
+  // Compteur lignes cochées
+  const counter = document.createElement("span");
+  counter.className = "parts-preventif-counter";
+
+  row1.appendChild(btnComplet);
+  row1.appendChild(dateInput);
+  row1.appendChild(btnValider);
+  row1.appendChild(counter);
+  bar.appendChild(row1);
+  container.appendChild(bar);
+
+  // =====================
+  // TABLEAU
+  // =====================
   const wrapper = document.createElement("div");
   wrapper.className = "table-wrapper";
 
@@ -372,46 +364,117 @@ function createPartsTable(model, rows) {
       "Date de contrôle",
       "Critique",
       "À prévoir",
-      "Contrôle préventif"
+      "Préventif"
     ])
   );
 
   const tbody = document.createElement("tbody");
+  const trList = [];
 
-  if (safeModel.length === 0) {
-    tbody.appendChild(createEmptyTableRow(8, "Aucune ligne définie."));
-  } else {
-    safeModel.forEach((item, index) => {
-      const row = safeRows[index] || createEmptyLocalRow();
-      const tr = document.createElement("tr");
+  safeModel.forEach((item, index) => {
+    const row = safeRows[index] || createEmptyLocalRow();
+    const tr = document.createElement("tr");
+    trList.push({ tr, row });
 
-      applyPieceRowClasses(tr, row);
+    applyPieceRowClasses(tr, row);
 
-      const tdPiece = document.createElement("td");
-      tdPiece.textContent = item?.piece || "";
+    const tdPiece = document.createElement("td");
+    tdPiece.textContent = item?.piece || "";
 
-      const tdReference = document.createElement("td");
-      tdReference.textContent = item?.reference || "";
+    const tdReference = document.createElement("td");
+    tdReference.textContent = item?.reference || "";
 
-      const tdRepere = document.createElement("td");
-      tdRepere.textContent = item?.repere || "";
+    const tdRepere = document.createElement("td");
+    tdRepere.textContent = item?.repere || "";
 
-      tr.appendChild(tdPiece);
-      tr.appendChild(tdReference);
-      tr.appendChild(tdRepere);
-      tr.appendChild(createHistoryDateCell(row, "chgt"));
-      tr.appendChild(createHistoryDateCell(row, "ctrl"));
-      tr.appendChild(createPieceStatusCell(row, "critical"));
-      tr.appendChild(createPieceStatusCell(row, "warning"));
-      tr.appendChild(createPieceStatusCell(row, "control"));
+    tr.appendChild(tdPiece);
+    tr.appendChild(tdReference);
+    tr.appendChild(tdRepere);
+    tr.appendChild(createHistoryDateCell(row, "chgt"));
+    tr.appendChild(createHistoryDateCell(row, "ctrl"));
+    tr.appendChild(createPieceStatusCell(row, "critical"));
+    tr.appendChild(createPieceStatusCell(row, "warning"));
+    tr.appendChild(createPieceStatusCell(row, "control"));
 
-      tbody.appendChild(tr);
-    });
-  }
+    tbody.appendChild(tr);
+  });
 
   table.appendChild(tbody);
   wrapper.appendChild(table);
   container.appendChild(wrapper);
+
+  // =====================
+  // LOGIQUE BARRE
+  // =====================
+
+  // Mise à jour du compteur de lignes cochées
+  function refreshCounter() {
+    const nbCoches = safeRows.filter((r) => r && r.controlePreventif === true).length;
+    if (nbCoches > 0) {
+      counter.textContent = `${nbCoches} ligne${nbCoches > 1 ? "s" : ""} cochée${nbCoches > 1 ? "s" : ""}`;
+      counter.style.display = "inline-flex";
+      btnValider.disabled = false;
+      btnValider.classList.remove("parts-btn-disabled");
+    } else {
+      counter.textContent = "";
+      counter.style.display = "none";
+      btnValider.disabled = true;
+      btnValider.classList.add("parts-btn-disabled");
+    }
+    // Mettre à jour l'état visuel du btn Complet
+    const nbTotal = safeRows.filter((r) => r).length;
+    if (nbCoches === nbTotal && nbTotal > 0) {
+      btnComplet.classList.add("parts-preventif-complet-active");
+      btnComplet.textContent = "📋 Tout coché ✓";
+    } else {
+      btnComplet.classList.remove("parts-preventif-complet-active");
+      btnComplet.textContent = "📋 Préventif complet";
+    }
+  }
+
+  // Intercepter les clics sur les boutons Préventif des lignes pour refresh le compteur
+  tbody.addEventListener("click", () => {
+    setTimeout(refreshCounter, 50);
+  });
+
+  // Bouton "Préventif complet" : coche ou décoche tout
+  btnComplet.onclick = (e) => {
+    e.preventDefault();
+    const nbTotal = safeRows.filter((r) => r).length;
+    const nbCoches = safeRows.filter((r) => r && r.controlePreventif === true).length;
+    const cibleEtat = nbCoches < nbTotal; // si tout est déjà coché → tout décocher
+    safeRows.forEach((row) => {
+      if (row) row.controlePreventif = cibleEtat;
+    });
+    saveAll();
+    refreshCounter();
+    // Rafraîchir les classes de lignes visuellement sans re-render complet
+    trList.forEach(({ tr, row }) => {
+      tr.classList.remove("row-preventif");
+      if (row.controlePreventif) tr.classList.add("row-preventif");
+    });
+  };
+
+  // Bouton "✓ Valider les préventifs cochés"
+  btnValider.onclick = (e) => {
+    e.preventDefault();
+    const dateVal = dateInput.value || getTodayDateString();
+    let nbValides = 0;
+    safeRows.forEach((row) => {
+      if (row && row.controlePreventif === true) {
+        updateDateCtrl(row, dateVal);
+        row.controlePreventif = false;
+        nbValides++;
+      }
+    });
+    if (nbValides > 0) {
+      saveAll();
+      renderCurrentState();
+    }
+  };
+
+  // Init compteur
+  refreshCounter();
 
   return container;
 }
