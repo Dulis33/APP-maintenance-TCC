@@ -2596,7 +2596,7 @@ tr:focus-within {
 /* cellule-grid reste toujours en flex nowrap, 4 items sur une ligne */
 
 /* =========================
-   BARRE D'ACTIONS TABLEAU DE PIÈCES
+   BARRE PRÉVENTIF TABLEAU DE PIÈCES
 ========================= */
 
 .parts-table-container {
@@ -2608,21 +2608,19 @@ tr:focus-within {
 
 .parts-table-action-bar {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
   background: var(--surface-soft);
   border: 1px solid var(--border);
   border-radius: 12px;
 }
 
-.parts-action-group {
+.parts-action-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 7px;
-  flex: 1 1 auto;
+  gap: 8px;
 }
 
 .parts-action-label {
@@ -2632,38 +2630,84 @@ tr:focus-within {
   white-space: nowrap;
 }
 
-.parts-action-btn {
+.parts-date-input {
+  flex: 0 0 auto;
   width: auto !important;
-  min-height: 34px !important;
-  padding: 0 14px !important;
-  font-size: 12px !important;
-  white-space: nowrap;
+  min-width: 140px;
 }
 
-.parts-preventif-done-btn {
+.parts-action-btn {
+  width: auto !important;
+  min-height: 38px !important;
+  padding: 0 16px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  white-space: nowrap;
+  border-radius: 9px !important;
+}
+
+/* Bouton "Préventif complet" */
+.parts-preventif-complet-btn {
+  background: linear-gradient(135deg, #2563a8, #1a3f6f) !important;
+  color: #fff !important;
+  border: none !important;
+  box-shadow: 0 3px 10px rgba(26, 63, 111, 0.35) !important;
+}
+
+.parts-preventif-complet-btn.parts-preventif-complet-active {
   background: linear-gradient(135deg, #48bb78, #276749) !important;
   box-shadow: 0 3px 10px rgba(39, 103, 73, 0.4) !important;
-  flex: 0 0 auto;
+}
+
+/* Bouton "✓ Valider" */
+.parts-preventif-done-btn {
+  background: linear-gradient(135deg, #48bb78, #276749) !important;
+  color: #fff !important;
+  border: none !important;
+  box-shadow: 0 3px 10px rgba(39, 103, 73, 0.4) !important;
+}
+
+.parts-preventif-done-btn.parts-btn-disabled {
+  background: var(--surface-raised) !important;
+  color: var(--text-muted) !important;
+  box-shadow: none !important;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Compteur lignes cochées */
+.parts-preventif-counter {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(72, 187, 120, 0.15);
+  color: #48bb78;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid rgba(72, 187, 120, 0.3);
 }
 
 @media (max-width: 600px) {
-  .parts-table-action-bar {
+  .parts-action-row {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .parts-action-group {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .parts-action-label {
-    font-size: 11px;
+  .parts-date-input {
+    width: 100% !important;
   }
 
   .parts-action-btn {
     width: 100% !important;
-    min-height: 40px !important;
+    min-height: 44px !important;
+    justify-content: center;
+    display: flex;
+  }
+
+  .parts-preventif-counter {
+    text-align: center;
+    justify-content: center;
   }
 }
 
