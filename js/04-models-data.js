@@ -121,6 +121,7 @@ function createEmptyLocalRow() {
     aPrevoir: false,
     aControler: false,
     controlePreventif: false,
+    preventifRealise: false,
     historiqueChgt: [],
     historiqueCtrl: []
   };
@@ -134,6 +135,7 @@ function createEmptyInjecteurPieceRow() {
     aPrevoir: false,
     aControler: false,
     controlePreventif: false,
+    preventifRealise: false,
     commentaire: "",
     historiqueChgt: [],
     historiqueCtrl: []
@@ -246,6 +248,7 @@ function normalizeRow(row = {}) {
     // Sur les lignes de pièces, l'ancien À contrôler est migré en Contrôle préventif.
     aControler: false,
     controlePreventif: isPreventif,
+    preventifRealise: normalizeBoolean(safeRow.preventifRealise),
     historiqueChgt: cloneStringArray(safeRow.historiqueChgt),
     historiqueCtrl: cloneStringArray(safeRow.historiqueCtrl)
   };
@@ -266,6 +269,7 @@ function normalizeInjecteurPieceRow(row = {}) {
     aPrevoir: safeRow.aPrevoir === true && !isLegacyCritical,
     aControler: false,
     controlePreventif: isPreventif,
+    preventifRealise: normalizeBoolean(safeRow.preventifRealise),
     commentaire: safeRow.commentaire || "",
     historiqueChgt: cloneStringArray(safeRow.historiqueChgt),
     historiqueCtrl: cloneStringArray(safeRow.historiqueCtrl)

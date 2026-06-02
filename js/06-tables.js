@@ -288,6 +288,9 @@ function createPartsTable(model, rows) {
   const safeModel = Array.isArray(model) ? model : [];
   const safeRows = Array.isArray(rows) ? rows : [];
 
+  // Rôle : encadrant si admin débloqué, technicien sinon
+  const isEncadrant = typeof adminUnlocked !== "undefined" && adminUnlocked === true;
+
   const container = document.createElement("div");
   container.className = "parts-table-container";
 
@@ -296,9 +299,9 @@ function createPartsTable(model, rows) {
     wrapper.className = "table-wrapper";
     const table = document.createElement("table");
     table.className = "parts-table";
-    table.appendChild(createTableHead(["Pièce","Référence","Repère","Date de changement","Date de contrôle","Critique","À prévoir","Contrôle préventif"]));
+    table.appendChild(createTableHead(["Pièce","Référence","Repère","Date chgt","Date contrôle","Critique","À prévoir","Préventif à réaliser","Réalisé"]));
     const tbody = document.createElement("tbody");
-    tbody.appendChild(createEmptyTableRow(8, "Aucune ligne définie."));
+    tbody.appendChild(createEmptyTableRow(9, "Aucune ligne définie."));
     table.appendChild(tbody);
     wrapper.appendChild(table);
     container.appendChild(wrapper);
@@ -306,38 +309,55 @@ function createPartsTable(model, rows) {
   }
 
   // =====================
+  // BANDEAU MODE
+  // =====================
+  const modeBanner = document.createElement("div");
+  modeBanner.className = isEncadrant
+    ? "parts-mode-banner parts-mode-encadrant"
+    : "parts-mode-banner parts-mode-technicien";
+  modeBanner.innerHTML = isEncadrant
+    ? "🔓 <strong>Mode encadrant</strong> — Planification activée"
+    : "👷 <strong>Mode technicien</strong> — Cochez les préventifs réalisés";
+  container.appendChild(modeBanner);
+
+  // =====================
   // BARRE PRÉVENTIF
   // =====================
   const bar = document.createElement("div");
   bar.className = "parts-table-action-bar";
 
-  // Ligne 1 : Préventif complet + sélecteur date + Valider
   const row1 = document.createElement("div");
   row1.className = "parts-action-row";
 
-  // Bouton "Préventif complet"
+  // Bouton "Programmer préventif complet" — encadrant seulement
   const btnComplet = document.createElement("button");
   btnComplet.type = "button";
-  btnComplet.className = "parts-action-btn parts-preventif-complet-btn";
-  btnComplet.textContent = "📋 Préventif complet";
-  btnComplet.title = "Coche le préventif sur toutes les lignes";
+  if (!isEncadrant) {
+    btnComplet.className = "parts-action-btn parts-preventif-complet-btn parts-btn-disabled";
+    btnComplet.disabled = true;
+    btnComplet.title = "Réservé à l'encadrant";
+  } else {
+    btnComplet.className = "parts-action-btn parts-preventif-complet-btn";
+  }
 
-  // Sélecteur de date (défaut = aujourd'hui)
+  // Sélecteur de date
   const dateInput = document.createElement("input");
   dateInput.type = "date";
   dateInput.className = "date-input parts-date-input";
   dateInput.value = getTodayDateString();
 
-  // Bouton "✓ Valider les préventifs cochés"
+  // Bouton valider — accessible au technicien
   const btnValider = document.createElement("button");
   btnValider.type = "button";
-  btnValider.className = "parts-action-btn parts-preventif-done-btn";
-  btnValider.textContent = "✓ Valider les préventifs cochés";
-  btnValider.title = "Applique la date choisie aux lignes cochées en Préventif et les décoche";
+  btnValider.className = "parts-action-btn parts-preventif-done-btn parts-btn-disabled";
+  btnValider.textContent = "✓ Valider les réalisés";
+  btnValider.title = "Inscrit la date choisie sur les lignes Réalisé et les remet à zéro";
+  btnValider.disabled = true;
 
-  // Compteur lignes cochées
+  // Compteur
   const counter = document.createElement("span");
   counter.className = "parts-preventif-counter";
+  counter.style.display = "none";
 
   row1.appendChild(btnComplet);
   row1.appendChild(dateInput);
@@ -357,14 +377,10 @@ function createPartsTable(model, rows) {
 
   table.appendChild(
     createTableHead([
-      "Pièce",
-      "Référence",
-      "Repère",
-      "Date de changement",
-      "Date de contrôle",
-      "Critique",
-      "À prévoir",
-      "Préventif"
+      "Pièce", "Référence", "Repère",
+      "Date chgt", "Date contrôle",
+      "Critique", "À prévoir",
+      "Préventif à réaliser", "Réalisé"
     ])
   );
 
@@ -378,24 +394,92 @@ function createPartsTable(model, rows) {
 
     applyPieceRowClasses(tr, row);
 
+    // Appliquer classe visuelle si "À faire" coché
+    if (row.controlePreventif) tr.classList.add("row-a-faire");
+    if (row.preventifRealise) tr.classList.add("row-realise");
+
     const tdPiece = document.createElement("td");
     tdPiece.textContent = item?.piece || "";
-
-    const tdReference = document.createElement("td");
-    tdReference.textContent = item?.reference || "";
-
-    const tdRepere = document.createElement("td");
-    tdRepere.textContent = item?.repere || "";
+    const tdRef = document.createElement("td");
+    tdRef.textContent = item?.reference || "";
+    const tdRep = document.createElement("td");
+    tdRep.textContent = item?.repere || "";
 
     tr.appendChild(tdPiece);
-    tr.appendChild(tdReference);
-    tr.appendChild(tdRepere);
+    tr.appendChild(tdRef);
+    tr.appendChild(tdRep);
     tr.appendChild(createHistoryDateCell(row, "chgt"));
     tr.appendChild(createHistoryDateCell(row, "ctrl"));
     tr.appendChild(createPieceStatusCell(row, "critical"));
     tr.appendChild(createPieceStatusCell(row, "warning"));
-    tr.appendChild(createPieceStatusCell(row, "control"));
 
+    // Colonne "À faire" (bleu)
+    const tdAFaire = document.createElement("td");
+    const btnAFaire = document.createElement("button");
+    btnAFaire.type = "button";
+    btnAFaire.className = row.controlePreventif
+      ? "toggle-flag-button preventif active"
+      : "toggle-flag-button preventif";
+    btnAFaire.textContent = "Préventif";
+    // Mode technicien : bouton "À faire" verrouillé
+    if (!isEncadrant) {
+      btnAFaire.disabled = true;
+      btnAFaire.classList.add("parts-afaire-locked");
+      btnAFaire.title = "Planification réservée à l\'encadrant";
+    }
+
+    btnAFaire.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!isEncadrant) return;
+      row.controlePreventif = !row.controlePreventif;
+      // Si on décoche "À faire", on décoche aussi "Réalisé"
+      if (!row.controlePreventif) {
+        row.preventifRealise = false;
+        btnRealise.className = "toggle-flag-button preventif";
+        tr.classList.remove("row-realise");
+      }
+      btnAFaire.className = row.controlePreventif
+        ? "toggle-flag-button preventif active"
+        : "toggle-flag-button preventif";
+      tr.classList.toggle("row-a-faire", row.controlePreventif);
+      saveAll();
+      refreshCounter();
+      refreshBtnComplet();
+    };
+    tdAFaire.appendChild(btnAFaire);
+
+    // Colonne "Réalisé" (vert)
+    const tdRealise = document.createElement("td");
+    const btnRealise = document.createElement("button");
+    btnRealise.type = "button";
+    btnRealise.className = row.preventifRealise
+      ? "toggle-flag-button preventif active parts-btn-realise"
+      : "toggle-flag-button preventif parts-btn-realise";
+    btnRealise.textContent = "Réalisé";
+    btnRealise.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      // Ne peut être coché que si "À faire" est coché
+      if (!row.controlePreventif && !row.preventifRealise) return;
+      row.preventifRealise = !row.preventifRealise;
+      // Cocher "Réalisé" coche aussi "À faire" automatiquement
+      if (row.preventifRealise && !row.controlePreventif) {
+        row.controlePreventif = true;
+        btnAFaire.className = "toggle-flag-button preventif active";
+        tr.classList.add("row-a-faire");
+      }
+      btnRealise.className = row.preventifRealise
+        ? "toggle-flag-button preventif active parts-btn-realise"
+        : "toggle-flag-button preventif parts-btn-realise";
+      tr.classList.toggle("row-realise", row.preventifRealise);
+      saveAll();
+      refreshCounter();
+    };
+    tdRealise.appendChild(btnRealise);
+
+    tr.appendChild(tdAFaire);
+    tr.appendChild(tdRealise);
     tbody.appendChild(tr);
   });
 
@@ -407,11 +491,11 @@ function createPartsTable(model, rows) {
   // LOGIQUE BARRE
   // =====================
 
-  // Mise à jour du compteur de lignes cochées
   function refreshCounter() {
-    const nbCoches = safeRows.filter((r) => r && r.controlePreventif === true).length;
-    if (nbCoches > 0) {
-      counter.textContent = `${nbCoches} ligne${nbCoches > 1 ? "s" : ""} cochée${nbCoches > 1 ? "s" : ""}`;
+    const nbAFaire = safeRows.filter((r) => r && r.controlePreventif === true).length;
+    const nbRealise = safeRows.filter((r) => r && r.preventifRealise === true).length;
+    if (nbRealise > 0) {
+      counter.textContent = `${nbRealise} réalisé${nbRealise > 1 ? "s" : ""} prêt${nbRealise > 1 ? "s" : ""} à valider`;
       counter.style.display = "inline-flex";
       btnValider.disabled = false;
       btnValider.classList.remove("parts-btn-disabled");
@@ -421,49 +505,59 @@ function createPartsTable(model, rows) {
       btnValider.disabled = true;
       btnValider.classList.add("parts-btn-disabled");
     }
-    // Mettre à jour l'état visuel du btn Complet
+  }
+
+  function refreshBtnComplet() {
     const nbTotal = safeRows.filter((r) => r).length;
-    if (nbCoches === nbTotal && nbTotal > 0) {
-      btnComplet.classList.add("parts-preventif-complet-active");
-      btnComplet.textContent = "📋 Tout coché ✓";
+    const nbAFaire = safeRows.filter((r) => r && r.controlePreventif === true).length;
+    if (nbAFaire === nbTotal && nbTotal > 0) {
+      btnComplet.className = "parts-action-btn parts-preventif-complet-btn parts-preventif-complet-active";
+      btnComplet.textContent = "📋 Préventif à réaliser ✓";
+    } else if (nbAFaire > 0) {
+      btnComplet.className = "parts-action-btn parts-preventif-complet-btn parts-preventif-complet-active";
+      btnComplet.textContent = `📋 Préventif à réaliser (${nbAFaire}/${nbTotal})`;
     } else {
-      btnComplet.classList.remove("parts-preventif-complet-active");
-      btnComplet.textContent = "📋 Préventif complet";
+      btnComplet.className = "parts-action-btn parts-preventif-complet-btn";
+      btnComplet.textContent = "📋 Programmer préventif complet";
     }
   }
 
-  // Intercepter les clics sur les boutons Préventif des lignes pour refresh le compteur
-  tbody.addEventListener("click", () => {
-    setTimeout(refreshCounter, 50);
-  });
-
-  // Bouton "Préventif complet" : coche ou décoche tout
+  // Bouton complet : coche ou décoche "À faire" sur toutes les lignes
   btnComplet.onclick = (e) => {
     e.preventDefault();
     const nbTotal = safeRows.filter((r) => r).length;
-    const nbCoches = safeRows.filter((r) => r && r.controlePreventif === true).length;
-    const cibleEtat = nbCoches < nbTotal; // si tout est déjà coché → tout décocher
+    const nbAFaire = safeRows.filter((r) => r && r.controlePreventif === true).length;
+    const cible = nbAFaire < nbTotal;
     safeRows.forEach((row) => {
-      if (row) row.controlePreventif = cibleEtat;
+      if (row) {
+        row.controlePreventif = cible;
+        if (!cible) row.preventifRealise = false;
+      }
+    });
+    trList.forEach(({ tr, row }) => {
+      tr.classList.toggle("row-a-faire", !!row.controlePreventif);
+      tr.classList.toggle("row-realise", !!row.preventifRealise);
+      // Refresh boutons ligne
+      const btnAF = tr.querySelector(".toggle-flag-button.preventif:not(.parts-btn-realise)");
+      const btnR = tr.querySelector(".toggle-flag-button.parts-btn-realise");
+      if (btnAF) btnAF.className = row.controlePreventif ? "toggle-flag-button preventif active" : "toggle-flag-button preventif";
+      if (btnR) btnR.className = row.preventifRealise ? "toggle-flag-button preventif active parts-btn-realise" : "toggle-flag-button preventif parts-btn-realise";
     });
     saveAll();
     refreshCounter();
-    // Rafraîchir les classes de lignes visuellement sans re-render complet
-    trList.forEach(({ tr, row }) => {
-      tr.classList.remove("row-preventif");
-      if (row.controlePreventif) tr.classList.add("row-preventif");
-    });
+    refreshBtnComplet();
   };
 
-  // Bouton "✓ Valider les préventifs cochés"
+  // Bouton valider : inscrire date sur les "Réalisé" cochés et tout remettre à zéro
   btnValider.onclick = (e) => {
     e.preventDefault();
     const dateVal = dateInput.value || getTodayDateString();
     let nbValides = 0;
     safeRows.forEach((row) => {
-      if (row && row.controlePreventif === true) {
+      if (row && row.preventifRealise === true) {
         updateDateCtrl(row, dateVal);
         row.controlePreventif = false;
+        row.preventifRealise = false;
         nbValides++;
       }
     });
@@ -473,8 +567,8 @@ function createPartsTable(model, rows) {
     }
   };
 
-  // Init compteur
   refreshCounter();
+  refreshBtnComplet();
 
   return container;
 }
