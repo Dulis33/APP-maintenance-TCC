@@ -276,9 +276,86 @@ function createAlignedActionRow() {
   return row;
 }
 
+function getTodayDateString() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function createPartsTableActions(safeRows) {
+  const bar = document.createElement("div");
+  bar.className = "parts-table-action-bar";
+
+  // --- Appliquer une date de contrôle à toutes les lignes ---
+  const applyDateWrap = document.createElement("div");
+  applyDateWrap.className = "parts-action-group";
+
+  const applyLabel = document.createElement("span");
+  applyLabel.className = "parts-action-label";
+  applyLabel.textContent = "Date contrôle → toutes les lignes :";
+
+  const applyDateInput = document.createElement("input");
+  applyDateInput.type = "date";
+  applyDateInput.className = "date-input";
+  applyDateInput.value = getTodayDateString();
+
+  const applyDateBtn = document.createElement("button");
+  applyDateBtn.type = "button";
+  applyDateBtn.className = "model-save-button parts-action-btn";
+  applyDateBtn.textContent = "Appliquer";
+  applyDateBtn.onclick = (e) => {
+    e.preventDefault();
+    const dateVal = applyDateInput.value;
+    if (!dateVal) return;
+    safeRows.forEach((row) => {
+      if (row) updateDateCtrl(row, dateVal);
+    });
+    saveAll();
+    renderCurrentState();
+  };
+
+  applyDateWrap.appendChild(applyLabel);
+  applyDateWrap.appendChild(applyDateInput);
+  applyDateWrap.appendChild(applyDateBtn);
+
+  // --- Préventif effectué ---
+  const preventifBtn = document.createElement("button");
+  preventifBtn.type = "button";
+  preventifBtn.className = "model-save-button parts-action-btn parts-preventif-done-btn";
+  preventifBtn.textContent = "✓ Préventif effectué";
+  preventifBtn.title = "Applique la date du jour à toutes les lignes et décoche le flag Préventif";
+  preventifBtn.onclick = (e) => {
+    e.preventDefault();
+    const today = getTodayDateString();
+    safeRows.forEach((row) => {
+      if (row) {
+        updateDateCtrl(row, today);
+        row.controlePreventif = false;
+      }
+    });
+    saveAll();
+    renderCurrentState();
+  };
+
+  bar.appendChild(applyDateWrap);
+  bar.appendChild(preventifBtn);
+
+  return bar;
+}
+
 function createPartsTable(model, rows) {
   const safeModel = Array.isArray(model) ? model : [];
   const safeRows = Array.isArray(rows) ? rows : [];
+
+  const container = document.createElement("div");
+  container.className = "parts-table-container";
+
+  // Barre d'actions au-dessus du tableau
+  if (safeModel.length > 0) {
+    container.appendChild(createPartsTableActions(safeRows));
+  }
 
   const wrapper = document.createElement("div");
   wrapper.className = "table-wrapper";
@@ -334,8 +411,9 @@ function createPartsTable(model, rows) {
 
   table.appendChild(tbody);
   wrapper.appendChild(table);
+  container.appendChild(wrapper);
 
-  return wrapper;
+  return container;
 }
 
 function createTable(model, store, key) {
