@@ -421,11 +421,10 @@ function createPartsTable(model, rows) {
       ? "toggle-flag-button preventif active"
       : "toggle-flag-button preventif";
     btnAFaire.textContent = "Préventif";
-    // Mode technicien : bouton "À faire" verrouillé
+    // Mode technicien : bouton "À faire" verrouillé (déverrouillage via Espace encadrant)
     if (!isEncadrant) {
-      btnAFaire.disabled = true;
       btnAFaire.classList.add("parts-afaire-locked");
-      btnAFaire.title = "Planification réservée à l\'encadrant";
+      btnAFaire.title = "Réservé à l'encadrant — connectez-vous depuis l'accueil";
     }
 
     btnAFaire.onclick = (e) => {

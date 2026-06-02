@@ -998,44 +998,84 @@ function renderHomeView() {
 
   appView.appendChild(createHomeImportExportBlock());
 
-  // Bouton "Planifier un préventif" — visible uniquement en mode admin
-  if (typeof adminUnlocked !== "undefined" && adminUnlocked === true) {
-    const btnPlanif = document.createElement("button");
-    btnPlanif.type = "button";
-    btnPlanif.className = "admin-button planif-home-btn";
-    btnPlanif.onclick = () => {
-      if (typeof openPlanificationPopup === "function") {
-        openPlanificationPopup();
+  // ── Zone encadrant ──────────────────────────────────
+  const isAdmin = typeof adminUnlocked !== "undefined" && adminUnlocked === true;
+
+  if (isAdmin) {
+    // Mode encadrant : boutons fonctionnels + déconnexion
+
+    appView.appendChild(
+      createButton(
+        "📋 Planifier un préventif",
+        () => {
+          if (typeof openPlanificationPopup === "function") openPlanificationPopup();
+        },
+        "admin",
+        "",
+        null,
+        "Programmer des contrôles préventifs"
+      )
+    );
+
+    appView.appendChild(
+      createButton(
+        "Admin modèles",
+        () => setState("admin"),
+        "admin",
+        "",
+        null,
+        "Modèles • Schémas • Sauvegarde"
+      )
+    );
+
+    // Bouton déconnexion
+    const btnLogout = document.createElement("button");
+    btnLogout.type = "button";
+    btnLogout.className = "admin-button auth-logout-btn";
+    btnLogout.onclick = () => {
+      adminUnlocked = false;
+      renderCurrentState();
+    };
+    const logoutContent = document.createElement("div");
+    logoutContent.className = "button-content";
+    const logoutLabel = document.createElement("span");
+    logoutLabel.className = "button-label";
+    logoutLabel.textContent = "🔓 Connecté en tant qu'encadrant";
+    const logoutSub = document.createElement("span");
+    logoutSub.className = "button-subtext";
+    logoutSub.textContent = "Appuyer pour se déconnecter";
+    logoutContent.appendChild(logoutLabel);
+    logoutContent.appendChild(logoutSub);
+    btnLogout.appendChild(logoutContent);
+    appView.appendChild(btnLogout);
+
+  } else {
+    // Mode technicien : seul bouton de connexion encadrant
+    const btnLogin = document.createElement("button");
+    btnLogin.type = "button";
+    btnLogin.className = "admin-button auth-login-btn";
+    btnLogin.onclick = () => {
+      const pwd = prompt("Mot de passe encadrant :");
+      if (pwd === ADMIN_PASSWORD) {
+        adminUnlocked = true;
+        renderCurrentState();
+      } else if (pwd !== null) {
+        alert("Mot de passe incorrect");
       }
     };
-
-    const btnContent = document.createElement("div");
-    btnContent.className = "button-content";
-
-    const btnLabel = document.createElement("span");
-    btnLabel.className = "button-label";
-    btnLabel.textContent = "📋 Planifier un préventif";
-
-    const btnSub = document.createElement("span");
-    btnSub.className = "button-subtext";
-    btnSub.textContent = "Programmer des contrôles préventifs";
-
-    btnContent.appendChild(btnLabel);
-    btnContent.appendChild(btnSub);
-    btnPlanif.appendChild(btnContent);
-    appView.appendChild(btnPlanif);
+    const loginContent = document.createElement("div");
+    loginContent.className = "button-content";
+    const loginLabel = document.createElement("span");
+    loginLabel.className = "button-label";
+    loginLabel.textContent = "🔒 Espace encadrant";
+    const loginSub = document.createElement("span");
+    loginSub.className = "button-subtext";
+    loginSub.textContent = "Planification & administration";
+    loginContent.appendChild(loginLabel);
+    loginContent.appendChild(loginSub);
+    btnLogin.appendChild(loginContent);
+    appView.appendChild(btnLogin);
   }
-
-  appView.appendChild(
-    createButton(
-      "Admin modèles",
-      askAdminPassword,
-      "admin",
-      "",
-      null,
-      "Modèles • Schémas • Sauvegarde"
-    )
-  );
 
   requestAnimationFrame(fitHomeDashboardToViewport);
 }
