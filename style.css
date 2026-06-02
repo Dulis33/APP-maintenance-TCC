@@ -4555,3 +4555,30 @@ body.home-fit-emergency.home-screen-fit #appView:has(.problem-home-button) > .bi
     white-space: normal;
   }
 }
+
+/* =========================
+   BOUTONS AUTHENTIFICATION
+========================= */
+
+/* Connecté — bouton de déconnexion */
+.auth-logout-btn {
+  border-color: rgba(72, 187, 120, 0.3) !important;
+  background: linear-gradient(135deg, rgba(72, 187, 120, 0.12), rgba(39, 103, 73, 0.08)) !important;
+  color: #48bb78 !important;
+}
+
+.auth-logout-btn:hover {
+  background: linear-gradient(135deg, rgba(72, 187, 120, 0.2), rgba(39, 103, 73, 0.14)) !important;
+}
+
+/* Déconnecté — bouton de connexion */
+.auth-login-btn {
+  border-color: rgba(74, 144, 196, 0.25) !important;
+  background: var(--surface-card) !important;
+  color: var(--text-soft) !important;
+}
+
+.auth-login-btn:hover {
+  border-color: rgba(74, 144, 196, 0.4) !important;
+  color: var(--blue-text) !important;
+}
