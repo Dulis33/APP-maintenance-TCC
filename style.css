@@ -2595,6 +2595,36 @@ tr:focus-within {
 
 /* cellule-grid reste toujours en flex nowrap, 4 items sur une ligne */
 
+/* Bandeau mode encadrant / technicien */
+.parts-mode-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 9px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.parts-mode-technicien {
+  background: rgba(49, 130, 206, 0.1);
+  border: 1px solid rgba(49, 130, 206, 0.25);
+  color: var(--blue-text);
+}
+
+.parts-mode-encadrant {
+  background: rgba(72, 187, 120, 0.1);
+  border: 1px solid rgba(72, 187, 120, 0.25);
+  color: #48bb78;
+}
+
+/* Bouton À faire verrouillé en mode technicien */
+.toggle-flag-button.parts-afaire-locked {
+  opacity: 0.45;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
 /* =========================
    BARRE PRÉVENTIF TABLEAU DE PIÈCES
 ========================= */
@@ -2623,13 +2653,6 @@ tr:focus-within {
   gap: 8px;
 }
 
-.parts-action-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-soft);
-  white-space: nowrap;
-}
-
 .parts-date-input {
   flex: 0 0 auto;
   width: auto !important;
@@ -2644,9 +2667,11 @@ tr:focus-within {
   font-weight: 700 !important;
   white-space: nowrap;
   border-radius: 9px !important;
+  cursor: pointer;
+  font-family: 'Inter', Arial, sans-serif;
 }
 
-/* Bouton "Préventif complet" */
+/* Bouton "Programmer préventif complet" — état initial */
 .parts-preventif-complet-btn {
   background: linear-gradient(135deg, #2563a8, #1a3f6f) !important;
   color: #fff !important;
@@ -2654,12 +2679,13 @@ tr:focus-within {
   box-shadow: 0 3px 10px rgba(26, 63, 111, 0.35) !important;
 }
 
+/* Bouton une fois des lignes cochées */
 .parts-preventif-complet-btn.parts-preventif-complet-active {
-  background: linear-gradient(135deg, #48bb78, #276749) !important;
-  box-shadow: 0 3px 10px rgba(39, 103, 73, 0.4) !important;
+  background: linear-gradient(135deg, #f6ad55, #c05621) !important;
+  box-shadow: 0 3px 10px rgba(192, 86, 33, 0.4) !important;
 }
 
-/* Bouton "✓ Valider" */
+/* Bouton "✓ Valider les réalisés" */
 .parts-preventif-done-btn {
   background: linear-gradient(135deg, #48bb78, #276749) !important;
   color: #fff !important;
@@ -2671,21 +2697,45 @@ tr:focus-within {
   background: var(--surface-raised) !important;
   color: var(--text-muted) !important;
   box-shadow: none !important;
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
-/* Compteur lignes cochées */
+/* Compteur lignes à valider */
 .parts-preventif-counter {
   display: inline-flex;
   align-items: center;
-  padding: 3px 10px;
+  padding: 4px 12px;
   border-radius: 999px;
   background: rgba(72, 187, 120, 0.15);
   color: #48bb78;
   font-size: 11px;
   font-weight: 700;
   border: 1px solid rgba(72, 187, 120, 0.3);
+}
+
+/* Bouton Réalisé — couleur verte distincte du À faire */
+.toggle-flag-button.parts-btn-realise {
+  min-width: 62px;
+}
+
+.toggle-flag-button.parts-btn-realise.active {
+  background: linear-gradient(135deg, #38a169, #22543d) !important;
+  border: none;
+  color: #fff;
+  box-shadow: 0 3px 8px rgba(34, 84, 61, 0.45) !important;
+}
+
+/* Lignes "À faire" cochées — fond bleu subtil */
+.row-a-faire td {
+  background: rgba(37, 99, 168, 0.08) !important;
+  border-left: 3px solid #2563a8 !important;
+}
+
+/* Lignes "Réalisé" cochées — fond vert subtil */
+.row-realise td {
+  background: rgba(72, 187, 120, 0.1) !important;
+  border-left: 3px solid #48bb78 !important;
 }
 
 @media (max-width: 600px) {
@@ -2701,8 +2751,7 @@ tr:focus-within {
   .parts-action-btn {
     width: 100% !important;
     min-height: 44px !important;
-    justify-content: center;
-    display: flex;
+    text-align: center;
   }
 
   .parts-preventif-counter {
