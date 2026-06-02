@@ -998,6 +998,34 @@ function renderHomeView() {
 
   appView.appendChild(createHomeImportExportBlock());
 
+  // Bouton "Planifier un préventif" — visible uniquement en mode admin
+  if (typeof adminUnlocked !== "undefined" && adminUnlocked === true) {
+    const btnPlanif = document.createElement("button");
+    btnPlanif.type = "button";
+    btnPlanif.className = "admin-button planif-home-btn";
+    btnPlanif.onclick = () => {
+      if (typeof openPlanificationPopup === "function") {
+        openPlanificationPopup();
+      }
+    };
+
+    const btnContent = document.createElement("div");
+    btnContent.className = "button-content";
+
+    const btnLabel = document.createElement("span");
+    btnLabel.className = "button-label";
+    btnLabel.textContent = "📋 Planifier un préventif";
+
+    const btnSub = document.createElement("span");
+    btnSub.className = "button-subtext";
+    btnSub.textContent = "Programmer des contrôles préventifs";
+
+    btnContent.appendChild(btnLabel);
+    btnContent.appendChild(btnSub);
+    btnPlanif.appendChild(btnContent);
+    appView.appendChild(btnPlanif);
+  }
+
   appView.appendChild(
     createButton(
       "Admin modèles",
