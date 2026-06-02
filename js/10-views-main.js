@@ -398,14 +398,12 @@ function hasAnyPositiveCounter(values) {
 function fitHomeDashboardToViewport() {
   if (!currentState || currentState.type !== "home") return;
 
-  // Sur PC (largeur >= 701px) : pas de lock, scroll libre
-  if (window.innerWidth >= 701) {
-    document.body.classList.remove(
-      "home-screen-fit", "home-fit-normal", "home-fit-tight",
-      "home-fit-ultra", "home-fit-emergency", "home-needs-scroll"
-    );
-    return;
-  }
+  // Scroll libre sur tous les écrans — pas de lock viewport
+  document.body.classList.remove(
+    "home-screen-fit", "home-fit-normal", "home-fit-tight",
+    "home-fit-ultra", "home-fit-emergency", "home-needs-scroll"
+  );
+  return;
 
   document.body.classList.add("home-screen-fit");
 
