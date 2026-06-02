@@ -3556,6 +3556,32 @@ button.cellule-state-pill {
   /* cellule-grid reste toujours en 4 colonnes */
 }
 
+/* Bouton Afficher/Masquer — style global (indépendant de home-screen-fit) */
+.dashboard-state-toggle-btn {
+  flex: 0 0 auto;
+  border: 1px solid var(--border-bright);
+  border-radius: 6px;
+  padding: 3px 10px;
+  background: var(--surface-raised);
+  color: var(--text-soft);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+  cursor: pointer;
+  font-family: 'Inter', Arial, sans-serif;
+  white-space: nowrap;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.dashboard-state-toggle-btn:hover {
+  background: var(--surface-card);
+  color: var(--text);
+}
+
+.dashboard-state-toggle-btn:active {
+  transform: scale(0.95);
+}
+
 /* =========================
    ACCUEIL : LIGNES D'ÉTAT MASQUABLES
 ========================= */
