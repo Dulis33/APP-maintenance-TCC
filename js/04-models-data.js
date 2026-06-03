@@ -68,11 +68,82 @@ const DATA_INJECTEUR_CONVOYEURS = createInjecteurConvoyeurRoot();
 const GLOBAL_PROBLEMS = [];
 const GLOBAL_PROBLEMS_ARCHIVE = [];
 
+// Plans préventifs programmés
+const DATA_PLANS_PREVENTIFS = [];
+
 let MANUAL_INTERVENTION_ROWS = [];
 let INTERVENTION_COMMENT_OVERRIDES = {};
 
 function normalizeBoolean(value) {
   return value === true || value === "true";
+}
+
+function generatePlanId() {
+  return "plan_" + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+}
+
+const RECURRENCES = [
+  { key: "ponctuel",    label: "Ponctuel (une seule fois)" },
+  { key: "semaine",     label: "Toutes les semaines",      jours: 7  },
+  { key: "2semaines",   label: "Toutes les 2 semaines",    jours: 14 },
+  { key: "3semaines",   label: "Toutes les 3 semaines",    jours: 21 },
+  { key: "mensuel",     label: "Tous les mois",            mois: 1   },
+  { key: "trimestriel", label: "Tous les trimestres",      mois: 3   }
+];
+
+function getRecurrenceLabel(key) {
+  const r = RECURRENCES.find((r) => r.key === key);
+  return r ? r.label : key;
+}
+
+function calcProchaineDateEcheance(dateRealiseeStr, recurrenceKey) {
+  const r = RECURRENCES.find((r) => r.key === recurrenceKey);
+  if (!r || recurrenceKey === "ponctuel") return null;
+  const d = new Date(dateRealiseeStr);
+  if (isNaN(d.getTime())) return null;
+  if (r.jours) {
+    d.setDate(d.getDate() + r.jours);
+  } else if (r.mois) {
+    d.setMonth(d.getMonth() + r.mois);
+  }
+  return d.toISOString().split("T")[0];
+}
+
+function normalizePlanPreventif(plan = {}) {
+  return {
+    id:               plan.id || generatePlanId(),
+    nom:              plan.nom || "Préventif",
+    recurrence:       plan.recurrence || "ponctuel",
+    dateCreation:     plan.dateCreation || "",
+    prochaineEcheance: plan.prochaineEcheance || "",
+    equipements:      Array.isArray(plan.equipements) ? plan.equipements : [],
+    statut:           plan.statut || "actif",
+    historiqueRealisations: Array.isArray(plan.historiqueRealisations) ? plan.historiqueRealisations : []
+  };
+}
+
+function isPlanEchu(plan) {
+  if (!plan || plan.statut !== "actif") return false;
+  if (!plan.prochaineEcheance) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const echeance = new Date(plan.prochaineEcheance);
+  return echeance <= today;
+}
+
+function getPlansForEquipement(type, id, convoyeurKey, tableauType) {
+  return DATA_PLANS_PREVENTIFS.filter((plan) => {
+    if (!plan || plan.statut !== "actif") return false;
+    return plan.equipements.some((eq) => {
+      if (eq.type !== type) return false;
+      if (type === "injecteur") {
+        return eq.injecteurId === id
+          && (!convoyeurKey || eq.convoyeurKey === convoyeurKey)
+          && (!tableauType || eq.tableauType === tableauType);
+      }
+      return Array.isArray(eq.ids) && eq.ids.includes(id);
+    });
+  });
 }
 
 function cloneStringArray(value) {
@@ -121,7 +192,6 @@ function createEmptyLocalRow() {
     aPrevoir: false,
     aControler: false,
     controlePreventif: false,
-    preventifRealise: false,
     historiqueChgt: [],
     historiqueCtrl: []
   };
@@ -135,7 +205,6 @@ function createEmptyInjecteurPieceRow() {
     aPrevoir: false,
     aControler: false,
     controlePreventif: false,
-    preventifRealise: false,
     commentaire: "",
     historiqueChgt: [],
     historiqueCtrl: []
@@ -248,7 +317,6 @@ function normalizeRow(row = {}) {
     // Sur les lignes de pièces, l'ancien À contrôler est migré en Contrôle préventif.
     aControler: false,
     controlePreventif: isPreventif,
-    preventifRealise: normalizeBoolean(safeRow.preventifRealise),
     historiqueChgt: cloneStringArray(safeRow.historiqueChgt),
     historiqueCtrl: cloneStringArray(safeRow.historiqueCtrl)
   };
@@ -269,7 +337,6 @@ function normalizeInjecteurPieceRow(row = {}) {
     aPrevoir: safeRow.aPrevoir === true && !isLegacyCritical,
     aControler: false,
     controlePreventif: isPreventif,
-    preventifRealise: normalizeBoolean(safeRow.preventifRealise),
     commentaire: safeRow.commentaire || "",
     historiqueChgt: cloneStringArray(safeRow.historiqueChgt),
     historiqueCtrl: cloneStringArray(safeRow.historiqueCtrl)

@@ -528,7 +528,11 @@ function buildPayload() {
     globalProblemsArchive: GLOBAL_PROBLEMS_ARCHIVE,
 
     manualInterventionRows: MANUAL_INTERVENTION_ROWS,
-    interventionCommentOverrides: INTERVENTION_COMMENT_OVERRIDES
+    interventionCommentOverrides: INTERVENTION_COMMENT_OVERRIDES,
+
+    plansPreventifs: DATA_PLANS_PREVENTIFS.map((p) =>
+      typeof normalizePlanPreventif === "function" ? normalizePlanPreventif(p) : p
+    )
   };
 }
 
@@ -669,6 +673,16 @@ function applyLoadedData(data) {
 
   ensureGlobalProblems();
   ensureGlobalProblemsArchive();
+
+  // Plans préventifs
+  DATA_PLANS_PREVENTIFS.length = 0;
+  if (Array.isArray(data.plansPreventifs)) {
+    data.plansPreventifs.forEach((p) => {
+      DATA_PLANS_PREVENTIFS.push(
+        typeof normalizePlanPreventif === "function" ? normalizePlanPreventif(p) : p
+      );
+    });
+  }
 
   MANUAL_INTERVENTION_ROWS = Array.isArray(data.manualInterventionRows)
     ? data.manualInterventionRows
