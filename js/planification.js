@@ -1,61 +1,31 @@
 /* =====================================================
-   PLANIFICATION PRÉVENTIF
-   Popup de planification accessible depuis :
-   - La page d'accueil (encadrant)
-   - Chaque équipement (pré-rempli)
+   MODULE PLANS PRÉVENTIFS
+   - Création / suppression de plans
+   - Affichage dans les tableaux d'équipements
+   - Validation par le technicien
 ===================================================== */
 
-/**
- * Applique controlePreventif + preventifPlanifieDate sur un tableau de rows
- */
-function planifierRows(rows, date) {
-  if (!Array.isArray(rows)) return;
-  rows.forEach((row) => {
-    if (row) {
-      row.controlePreventif = true;
-      row.preventifPlanifieDate = date;
-    }
-  });
+/* ---- Utilitaires ---- */
+
+function getTodayDateString() {
+  if (typeof window._getTodayDateString === "function") return window._getTodayDateString();
+  const d = new Date();
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, "0"),
+    String(d.getDate()).padStart(2, "0")
+  ].join("-");
 }
 
-/**
- * Obtenir les rows d'un chariot (pièces directes)
- */
-function getChariotRows(chariotNumber) {
-  const key = getChariotKey(chariotNumber);
-  ensureLocalRows(DATA_CHARIOTS, key, MODELE_CHARIOT_STANDARD);
-  return DATA_CHARIOTS[key] || [];
+function formatDateFR(isoStr) {
+  if (!isoStr) return "—";
+  const [y, m, d] = isoStr.split("-");
+  return `${d}/${m}/${y}`;
 }
 
-/**
- * Obtenir les rows d'un groupe moteur
- */
-function getGroupeMoteurRows(groupNumber) {
-  const key = getGroupeMoteurKey(groupNumber);
-  ensureLocalRows(DATA_GROUPE_MOTEUR, key, MODELE_GROUPE_MOTEUR);
-  return DATA_GROUPE_MOTEUR[key] || [];
-}
-
-/**
- * Obtenir les rows d'une sortie
- */
-function getSortieRows(sortieNumber) {
-  const key = getSortieKey(sortieNumber);
-  ensureLocalRows(DATA_SORTIES, key, MODELE_SORTIE);
-  return DATA_SORTIES[key] || [];
-}
-
-/**
- * Obtenir les rows d'un injecteur/convoyeur/type
- */
-function getInjecteurConvoyeurRows(injecteurNumber, convoyeurKey, type) {
-  ensureInjecteurPieceRows(DATA_INJECTEUR_CONVOYEURS, injecteurNumber, convoyeurKey, type);
-  return DATA_INJECTEUR_CONVOYEURS[injecteurNumber]?.[convoyeurKey]?.[type] || [];
-}
-
-/* =====================================================
-   POPUP PRINCIPALE
-===================================================== */
+/* ====================================================
+   POPUP PLANIFICATION
+==================================================== */
 
 function openPlanificationPopup(preselect = {}) {
   const existing = document.getElementById("planificationPopup");
@@ -68,118 +38,126 @@ function openPlanificationPopup(preselect = {}) {
   const box = document.createElement("div");
   box.className = "history-box planif-box";
 
-  // En-tête
+  /* ---- En-tête ---- */
   const header = document.createElement("div");
   header.className = "planif-header";
-
   const title = document.createElement("h3");
   title.textContent = "📋 Planifier un préventif";
-
   const closeBtn = document.createElement("button");
   closeBtn.type = "button";
   closeBtn.className = "cellule-history-large-close";
   closeBtn.textContent = "×";
   closeBtn.onclick = () => overlay.remove();
-
   header.appendChild(title);
   header.appendChild(closeBtn);
   box.appendChild(header);
 
-  // Date prévue
+  /* ---- Nom du préventif ---- */
+  const nomSection = document.createElement("div");
+  nomSection.className = "planif-section";
+  const nomLabel = document.createElement("div");
+  nomLabel.className = "planif-section-label";
+  nomLabel.textContent = "Nom du préventif";
+  const nomInput = document.createElement("input");
+  nomInput.type = "text";
+  nomInput.className = "model-input";
+  nomInput.placeholder = "ex : Ronde sensorielle, Nettoyage, Graissage…";
+  nomInput.value = preselect.nom || "";
+  nomSection.appendChild(nomLabel);
+  nomSection.appendChild(nomInput);
+  box.appendChild(nomSection);
+
+  /* ---- Date d'échéance ---- */
   const dateSection = document.createElement("div");
   dateSection.className = "planif-section";
-
   const dateLabel = document.createElement("div");
   dateLabel.className = "planif-section-label";
-  dateLabel.textContent = "Date prévue";
-
+  dateLabel.textContent = "Première échéance";
   const dateInput = document.createElement("input");
   dateInput.type = "date";
   dateInput.className = "date-input";
-  dateInput.value = getTodayDateString();
-
+  dateInput.value = preselect.date || getTodayDateString();
   dateSection.appendChild(dateLabel);
   dateSection.appendChild(dateInput);
   box.appendChild(dateSection);
 
-  // Sélection équipement
-  const equipSection = document.createElement("div");
-  equipSection.className = "planif-section";
+  /* ---- Récurrence ---- */
+  const recSection = document.createElement("div");
+  recSection.className = "planif-section";
+  const recLabel = document.createElement("div");
+  recLabel.className = "planif-section-label";
+  recLabel.textContent = "Récurrence";
+  const recGrid = document.createElement("div");
+  recGrid.className = "planif-rec-grid";
 
-  const equipLabel = document.createElement("div");
-  equipLabel.className = "planif-section-label";
-  equipLabel.textContent = "Type d'équipement";
+  let selectedRec = preselect.recurrence || "ponctuel";
+  const recBtns = {};
 
-  const equipTabs = document.createElement("div");
-  equipTabs.className = "planif-tabs";
-
-  const equipTypes = [
-    { id: "chariot", label: "Chariots" },
-    { id: "groupeMoteur", label: "Groupes moteurs" },
-    { id: "injecteur", label: "Injecteurs" },
-    { id: "sortie", label: "Sorties" }
-  ];
-
-  let activeEquip = preselect.type || "chariot";
-  const tabBtns = {};
-  const panelContainer = document.createElement("div");
-  panelContainer.className = "planif-panel-container";
-
-  // État de sélection
-  const selection = {
-    chariot: new Set(preselect.type === "chariot" && preselect.ids ? preselect.ids : []),
-    groupeMoteur: new Set(preselect.type === "groupeMoteur" && preselect.ids ? preselect.ids : []),
-    sortie: new Set(preselect.type === "sortie" && preselect.ids ? preselect.ids : []),
-    injecteur: new Set(preselect.type === "injecteur" && preselect.ids ? preselect.ids : []),
-    injecteurConvoyeurs: {},   // { injecteurId: Set of convoyeurKey }
-    injecteurTableaux: {}      // { "injecteurId_convoyeurKey": Set("convoyeur"|"motorisation") }
-  };
-
-  // Pré-remplir injecteur convoyeurs/tableaux
-  if (preselect.type === "injecteur" && preselect.ids) {
-    preselect.ids.forEach((id) => {
-      selection.injecteurConvoyeurs[id] = new Set(
-        preselect.convoyeurs || INJECTEUR_CONVOYEURS.map((c) => c.key)
-      );
-      INJECTEUR_CONVOYEURS.forEach((conv) => {
-        const k = `${id}_${conv.key}`;
-        selection.injecteurTableaux[k] = new Set(preselect.tableaux || ["convoyeur", "motorisation"]);
-      });
-    });
-  }
-
-  function switchTab(type) {
-    activeEquip = type;
-    Object.keys(tabBtns).forEach((t) => {
-      tabBtns[t].className = t === type
-        ? "planif-tab active"
-        : "planif-tab";
-    });
-    panelContainer.replaceChildren(buildPanel(type));
-    updateSummary();
-  }
-
-  equipTypes.forEach(({ id, label }) => {
+  RECURRENCES.forEach((rec) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = id === activeEquip ? "planif-tab active" : "planif-tab";
-    btn.textContent = label;
-    btn.onclick = () => switchTab(id);
-    tabBtns[id] = btn;
-    equipTabs.appendChild(btn);
+    btn.className = rec.key === selectedRec ? "planif-rec-btn active" : "planif-rec-btn";
+    btn.textContent = rec.label;
+    btn.onclick = () => {
+      selectedRec = rec.key;
+      Object.values(recBtns).forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+    };
+    recBtns[rec.key] = btn;
+    recGrid.appendChild(btn);
   });
 
-  /* ---------- Builders de panneaux ---------- */
+  recSection.appendChild(recLabel);
+  recSection.appendChild(recGrid);
+  box.appendChild(recSection);
 
-  function buildToggleBtn(label, isActive, onClick) {
+  /* ---- Sélection équipements ---- */
+  const equipSection = document.createElement("div");
+  equipSection.className = "planif-section";
+  const equipLabel = document.createElement("div");
+  equipLabel.className = "planif-section-label";
+  equipLabel.textContent = "Équipements concernés";
+
+  const equipTypes = [
+    { id: "chariot",      label: "🚃 Chariots",       icon: "🚃" },
+    { id: "groupeMoteur", label: "⚙️ Groupes moteurs", icon: "⚙️" },
+    { id: "injecteur",    label: "📦 Injecteurs",      icon: "📦" },
+    { id: "sortie",       label: "🚪 Sorties",         icon: "🚪" }
+  ];
+
+  // Tous les panneaux visibles simultanément, pliables
+  const panelContainer = document.createElement("div");
+  panelContainer.className = "planif-panel-container planif-all-panels";
+
+  /* State */
+  const sel = {
+    chariot:      new Set(preselect.type === "chariot"      ? (preselect.ids || []) : []),
+    groupeMoteur: new Set(preselect.type === "groupeMoteur" ? (preselect.ids || []) : []),
+    sortie:       new Set(preselect.type === "sortie"       ? (preselect.ids || []) : []),
+    injecteurItems: []
+  };
+
+  if (preselect.type === "injecteur" && preselect.injecteurItems) {
+    sel.injecteurItems = preselect.injecteurItems;
+  }
+
+  // État ouvert/fermé des panneaux
+  const panelOpen = {
+    chariot:      preselect.type === "chariot"      || false,
+    groupeMoteur: preselect.type === "groupeMoteur" || false,
+    injecteur:    preselect.type === "injecteur"    || false,
+    sortie:       preselect.type === "sortie"       || false
+  };
+
+  const panelWrappers = {};
+
+  /* ---- Builders panneaux ---- */
+  function mkToggle(label, isActive, onToggle) {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = isActive ? "planif-select-btn active" : "planif-select-btn";
     btn.textContent = label;
-    btn.onclick = () => {
-      onClick();
-      updateSummary();
-    };
+    btn.onclick = () => { onToggle(btn); updateSummary(); };
     return btn;
   }
 
@@ -188,449 +166,290 @@ function openPlanificationPopup(preselect = {}) {
     panel.className = "planif-panel";
 
     if (type === "chariot") {
-      // Boutons Train 1 / Train 2 / Tous
-      const quickRow = document.createElement("div");
-      quickRow.className = "planif-quick-row";
-
-      const btnT1 = document.createElement("button");
-      btnT1.type = "button";
-      btnT1.className = "planif-quick-btn";
-      btnT1.textContent = "Train 1 (1-77)";
-      btnT1.onclick = () => {
-        for (let i = CONFIG_APP.TRAIN_1_START; i <= CONFIG_APP.TRAIN_1_END; i++) {
-          selection.chariot.add(i);
-        }
-        panel.replaceWith(buildPanel("chariot"));
-        updateSummary();
+      const qr = document.createElement("div");
+      qr.className = "planif-quick-row";
+      const mkQuick = (label, fn) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "planif-quick-btn";
+        b.textContent = label;
+        b.onclick = () => { fn(); panel.replaceWith(buildPanel("chariot")); updateSummary(); };
+        return b;
       };
-
-      const btnT2 = document.createElement("button");
-      btnT2.type = "button";
-      btnT2.className = "planif-quick-btn";
-      btnT2.textContent = "Train 2 (78-155)";
-      btnT2.onclick = () => {
-        for (let i = CONFIG_APP.TRAIN_2_START; i <= CONFIG_APP.TRAIN_2_END; i++) {
-          selection.chariot.add(i);
-        }
-        panel.replaceWith(buildPanel("chariot"));
-        updateSummary();
-      };
-
-      const btnAll = document.createElement("button");
-      btnAll.type = "button";
-      btnAll.className = "planif-quick-btn";
-      btnAll.textContent = "Tous";
-      btnAll.onclick = () => {
-        for (let i = CONFIG_APP.CHARIOT_MIN; i <= CONFIG_APP.CHARIOT_MAX; i++) {
-          selection.chariot.add(i);
-        }
-        panel.replaceWith(buildPanel("chariot"));
-        updateSummary();
-      };
-
-      const btnNone = document.createElement("button");
-      btnNone.type = "button";
-      btnNone.className = "planif-quick-btn planif-quick-reset";
-      btnNone.textContent = "Effacer";
-      btnNone.onclick = () => {
-        selection.chariot.clear();
-        panel.replaceWith(buildPanel("chariot"));
-        updateSummary();
-      };
-
-      quickRow.appendChild(btnT1);
-      quickRow.appendChild(btnT2);
-      quickRow.appendChild(btnAll);
-      quickRow.appendChild(btnNone);
-      panel.appendChild(quickRow);
-
+      qr.appendChild(mkQuick("Train 1 (1-77)",   () => { for (let i = CONFIG_APP.TRAIN_1_START; i <= CONFIG_APP.TRAIN_1_END; i++) sel.chariot.add(i); }));
+      qr.appendChild(mkQuick("Train 2 (78-155)", () => { for (let i = CONFIG_APP.TRAIN_2_START; i <= CONFIG_APP.TRAIN_2_END; i++) sel.chariot.add(i); }));
+      qr.appendChild(mkQuick("Tous",             () => { for (let i = CONFIG_APP.CHARIOT_MIN; i <= CONFIG_APP.CHARIOT_MAX; i++) sel.chariot.add(i); }));
+      const bClear = document.createElement("button");
+      bClear.type = "button"; bClear.className = "planif-quick-btn planif-quick-reset"; bClear.textContent = "Effacer";
+      bClear.onclick = () => { sel.chariot.clear(); panel.replaceWith(buildPanel("chariot")); updateSummary(); };
+      qr.appendChild(bClear);
+      panel.appendChild(qr);
       const grid = document.createElement("div");
       grid.className = "planif-grid-chariots";
-
       for (let i = CONFIG_APP.CHARIOT_MIN; i <= CONFIG_APP.CHARIOT_MAX; i++) {
         const num = i;
-        const active = selection.chariot.has(num);
-        const btn = buildToggleBtn(String(num), active, () => {
-          if (selection.chariot.has(num)) {
-            selection.chariot.delete(num);
-          } else {
-            selection.chariot.add(num);
-          }
-          btn.className = selection.chariot.has(num) ? "planif-select-btn active" : "planif-select-btn";
-        });
-        grid.appendChild(btn);
+        grid.appendChild(mkToggle(String(num), sel.chariot.has(num), (btn) => {
+          sel.chariot.has(num) ? sel.chariot.delete(num) : sel.chariot.add(num);
+          btn.className = sel.chariot.has(num) ? "planif-select-btn active" : "planif-select-btn";
+        }));
       }
-
       panel.appendChild(grid);
 
     } else if (type === "groupeMoteur") {
-      const grid = document.createElement("div");
-      grid.className = "planif-grid-small";
-
-      const btnAll = document.createElement("button");
-      btnAll.type = "button";
-      btnAll.className = "planif-quick-btn";
-      btnAll.textContent = "Tous";
-      btnAll.onclick = () => {
-        for (let i = CONFIG_APP.GROUPE_MOTEUR_MIN; i <= CONFIG_APP.GROUPE_MOTEUR_MAX; i++) {
-          selection.groupeMoteur.add(i);
-        }
-        panel.replaceWith(buildPanel("groupeMoteur"));
-        updateSummary();
-      };
-
-      const btnNone = document.createElement("button");
-      btnNone.type = "button";
-      btnNone.className = "planif-quick-btn planif-quick-reset";
-      btnNone.textContent = "Effacer";
-      btnNone.onclick = () => {
-        selection.groupeMoteur.clear();
-        panel.replaceWith(buildPanel("groupeMoteur"));
-        updateSummary();
-      };
-
-      const quickRow = document.createElement("div");
-      quickRow.className = "planif-quick-row";
-      quickRow.appendChild(btnAll);
-      quickRow.appendChild(btnNone);
-      panel.appendChild(quickRow);
-
-      for (let i = CONFIG_APP.GROUPE_MOTEUR_MIN; i <= CONFIG_APP.GROUPE_MOTEUR_MAX; i++) {
+      const qr = document.createElement("div"); qr.className = "planif-quick-row";
+      const bAll = document.createElement("button"); bAll.type="button"; bAll.className="planif-quick-btn"; bAll.textContent="Tous";
+      bAll.onclick = () => { for (let i=CONFIG_APP.GROUPE_MOTEUR_MIN;i<=CONFIG_APP.GROUPE_MOTEUR_MAX;i++) sel.groupeMoteur.add(i); panel.replaceWith(buildPanel("groupeMoteur")); updateSummary(); };
+      const bClr = document.createElement("button"); bClr.type="button"; bClr.className="planif-quick-btn planif-quick-reset"; bClr.textContent="Effacer";
+      bClr.onclick = () => { sel.groupeMoteur.clear(); panel.replaceWith(buildPanel("groupeMoteur")); updateSummary(); };
+      qr.appendChild(bAll); qr.appendChild(bClr); panel.appendChild(qr);
+      const grid = document.createElement("div"); grid.className = "planif-grid-small";
+      for (let i=CONFIG_APP.GROUPE_MOTEUR_MIN;i<=CONFIG_APP.GROUPE_MOTEUR_MAX;i++) {
         const num = i;
-        const range = getGroupeMoteurRange(num);
-        const active = selection.groupeMoteur.has(num);
-        const btn = buildToggleBtn(`GM ${num} (${range})`, active, () => {
-          if (selection.groupeMoteur.has(num)) {
-            selection.groupeMoteur.delete(num);
-          } else {
-            selection.groupeMoteur.add(num);
-          }
-          btn.className = selection.groupeMoteur.has(num) ? "planif-select-btn active" : "planif-select-btn";
-        });
-        grid.appendChild(btn);
+        const range = typeof getGroupeMoteurRange === "function" ? getGroupeMoteurRange(num) : "";
+        grid.appendChild(mkToggle(`GM${num} (${range})`, sel.groupeMoteur.has(num), (btn) => {
+          sel.groupeMoteur.has(num) ? sel.groupeMoteur.delete(num) : sel.groupeMoteur.add(num);
+          btn.className = sel.groupeMoteur.has(num) ? "planif-select-btn active" : "planif-select-btn";
+        }));
       }
-
       panel.appendChild(grid);
 
     } else if (type === "sortie") {
-      const quickRow = document.createElement("div");
-      quickRow.className = "planif-quick-row";
-
-      const btnAll = document.createElement("button");
-      btnAll.type = "button";
-      btnAll.className = "planif-quick-btn";
-      btnAll.textContent = "Toutes";
-      btnAll.onclick = () => {
-        for (let i = CONFIG_APP.SORTIE_MIN; i <= CONFIG_APP.SORTIE_MAX; i++) {
-          selection.sortie.add(i);
-        }
-        panel.replaceWith(buildPanel("sortie"));
-        updateSummary();
-      };
-
-      const btnNone = document.createElement("button");
-      btnNone.type = "button";
-      btnNone.className = "planif-quick-btn planif-quick-reset";
-      btnNone.textContent = "Effacer";
-      btnNone.onclick = () => {
-        selection.sortie.clear();
-        panel.replaceWith(buildPanel("sortie"));
-        updateSummary();
-      };
-
-      quickRow.appendChild(btnAll);
-      quickRow.appendChild(btnNone);
-      panel.appendChild(quickRow);
-
-      const grid = document.createElement("div");
-      grid.className = "planif-grid-small";
-
-      for (let i = CONFIG_APP.SORTIE_MIN; i <= CONFIG_APP.SORTIE_MAX; i++) {
-        const num = i;
-        const label = SORTIE_LABELS[num] ? `${num} — ${SORTIE_LABELS[num]}` : String(num);
-        const active = selection.sortie.has(num);
-        const btn = buildToggleBtn(label, active, () => {
-          if (selection.sortie.has(num)) {
-            selection.sortie.delete(num);
-          } else {
-            selection.sortie.add(num);
-          }
-          btn.className = selection.sortie.has(num) ? "planif-select-btn active" : "planif-select-btn";
-        });
-        grid.appendChild(btn);
+      const qr = document.createElement("div"); qr.className = "planif-quick-row";
+      const bAll = document.createElement("button"); bAll.type="button"; bAll.className="planif-quick-btn"; bAll.textContent="Toutes";
+      bAll.onclick = () => { for(let i=CONFIG_APP.SORTIE_MIN;i<=CONFIG_APP.SORTIE_MAX;i++) sel.sortie.add(i); panel.replaceWith(buildPanel("sortie")); updateSummary(); };
+      const bClr = document.createElement("button"); bClr.type="button"; bClr.className="planif-quick-btn planif-quick-reset"; bClr.textContent="Effacer";
+      bClr.onclick = () => { sel.sortie.clear(); panel.replaceWith(buildPanel("sortie")); updateSummary(); };
+      qr.appendChild(bAll); qr.appendChild(bClr); panel.appendChild(qr);
+      const grid = document.createElement("div"); grid.className = "planif-grid-small";
+      for (let i=CONFIG_APP.SORTIE_MIN;i<=CONFIG_APP.SORTIE_MAX;i++) {
+        const num=i;
+        const lbl = (typeof SORTIE_LABELS !== "undefined" && SORTIE_LABELS[num]) ? `${num} — ${SORTIE_LABELS[num]}` : String(num);
+        grid.appendChild(mkToggle(lbl, sel.sortie.has(num), (btn) => {
+          sel.sortie.has(num) ? sel.sortie.delete(num) : sel.sortie.add(num);
+          btn.className = sel.sortie.has(num) ? "planif-select-btn active" : "planif-select-btn";
+        }));
       }
-
       panel.appendChild(grid);
 
     } else if (type === "injecteur") {
-      CONFIG_APP.INJECTEUR_IDS.forEach((injecteurId) => {
-        const injecteurBlock = document.createElement("div");
-        injecteurBlock.className = "planif-injecteur-block";
-
-        // En-tête injecteur
-        const injecteurHead = document.createElement("div");
-        injecteurHead.className = "planif-injecteur-head";
-
-        const injecteurTitle = document.createElement("span");
-        injecteurTitle.className = "planif-injecteur-title";
-        injecteurTitle.textContent = `Injecteur ${injecteurId}`;
-
-        // Btn "Tout l'injecteur"
-        const btnTout = document.createElement("button");
-        btnTout.type = "button";
-        btnTout.className = "planif-quick-btn";
-        btnTout.textContent = "Tout";
-        btnTout.onclick = () => {
-          selection.injecteur.add(injecteurId);
-          if (!selection.injecteurConvoyeurs[injecteurId]) {
-            selection.injecteurConvoyeurs[injecteurId] = new Set();
-          }
+      CONFIG_APP.INJECTEUR_IDS.forEach((injId) => {
+        const block = document.createElement("div"); block.className = "planif-injecteur-block";
+        const head = document.createElement("div"); head.className = "planif-injecteur-head";
+        const htitle = document.createElement("span"); htitle.className = "planif-injecteur-title"; htitle.textContent = `Injecteur ${injId}`;
+        const bTout = document.createElement("button"); bTout.type="button"; bTout.className="planif-quick-btn"; bTout.textContent="Tout";
+        bTout.onclick = () => {
           INJECTEUR_CONVOYEURS.forEach((conv) => {
-            selection.injecteurConvoyeurs[injecteurId].add(conv.key);
-            const k = `${injecteurId}_${conv.key}`;
-            if (!selection.injecteurTableaux[k]) {
-              selection.injecteurTableaux[k] = new Set();
-            }
-            selection.injecteurTableaux[k].add("convoyeur");
-            selection.injecteurTableaux[k].add("motorisation");
+            ["convoyeur","motorisation"].forEach((tt) => {
+              sel.injecteurItems = sel.injecteurItems.filter((x) => !(x.injecteurId===injId && x.convoyeurKey===conv.key && x.tableauType===tt));
+              sel.injecteurItems.push({injecteurId:injId, convoyeurKey:conv.key, tableauType:tt});
+            });
           });
-          injecteurBlock.replaceWith(buildInjecteurBlock(injecteurId));
+          block.replaceWith(buildInjecteurBlock(injId));
           updateSummary();
         };
-
-        injecteurHead.appendChild(injecteurTitle);
-        injecteurHead.appendChild(btnTout);
-        injecteurBlock.appendChild(injecteurHead);
-
-        // Convoyeurs
-        INJECTEUR_CONVOYEURS.forEach((conv) => {
-          injecteurBlock.appendChild(buildConvoyeurRow(injecteurId, conv));
-        });
-
-        panel.appendChild(injecteurBlock);
+        head.appendChild(htitle); head.appendChild(bTout); block.appendChild(head);
+        INJECTEUR_CONVOYEURS.forEach((conv) => block.appendChild(buildConvRow(injId, conv)));
+        panel.appendChild(block);
       });
     }
-
     return panel;
   }
 
-  function buildInjecteurBlock(injecteurId) {
-    const block = document.createElement("div");
-    block.className = "planif-injecteur-block";
-
-    const head = document.createElement("div");
-    head.className = "planif-injecteur-head";
-
-    const title = document.createElement("span");
-    title.className = "planif-injecteur-title";
-    title.textContent = `Injecteur ${injecteurId}`;
-
-    const btnTout = document.createElement("button");
-    btnTout.type = "button";
-    btnTout.className = "planif-quick-btn";
-    btnTout.textContent = "Tout";
-    btnTout.onclick = () => {
-      selection.injecteur.add(injecteurId);
-      if (!selection.injecteurConvoyeurs[injecteurId]) {
-        selection.injecteurConvoyeurs[injecteurId] = new Set();
-      }
+  function buildInjecteurBlock(injId) {
+    const block = document.createElement("div"); block.className="planif-injecteur-block";
+    const head = document.createElement("div"); head.className="planif-injecteur-head";
+    const t = document.createElement("span"); t.className="planif-injecteur-title"; t.textContent=`Injecteur ${injId}`;
+    const bTout = document.createElement("button"); bTout.type="button"; bTout.className="planif-quick-btn"; bTout.textContent="Tout";
+    bTout.onclick = () => {
       INJECTEUR_CONVOYEURS.forEach((conv) => {
-        selection.injecteurConvoyeurs[injecteurId].add(conv.key);
-        const k = `${injecteurId}_${conv.key}`;
-        if (!selection.injecteurTableaux[k]) {
-          selection.injecteurTableaux[k] = new Set();
-        }
-        selection.injecteurTableaux[k].add("convoyeur");
-        selection.injecteurTableaux[k].add("motorisation");
+        ["convoyeur","motorisation"].forEach((tt) => {
+          sel.injecteurItems = sel.injecteurItems.filter((x) => !(x.injecteurId===injId && x.convoyeurKey===conv.key && x.tableauType===tt));
+          sel.injecteurItems.push({injecteurId:injId, convoyeurKey:conv.key, tableauType:tt});
+        });
       });
-      block.replaceWith(buildInjecteurBlock(injecteurId));
+      block.replaceWith(buildInjecteurBlock(injId));
       updateSummary();
     };
-
-    head.appendChild(title);
-    head.appendChild(btnTout);
-    block.appendChild(head);
-
-    INJECTEUR_CONVOYEURS.forEach((conv) => {
-      block.appendChild(buildConvoyeurRow(injecteurId, conv));
-    });
-
+    head.appendChild(t); head.appendChild(bTout); block.appendChild(head);
+    INJECTEUR_CONVOYEURS.forEach((conv) => block.appendChild(buildConvRow(injId, conv)));
     return block;
   }
 
-  function buildConvoyeurRow(injecteurId, conv) {
-    const row = document.createElement("div");
-    row.className = "planif-convoyeur-row";
-
-    const convLabel = document.createElement("span");
-    convLabel.className = "planif-convoyeur-label";
-    convLabel.textContent = conv.label;
-
-    const tableauxWrap = document.createElement("div");
-    tableauxWrap.className = "planif-tableaux-wrap";
-
-    const k = `${injecteurId}_${conv.key}`;
-    if (!selection.injecteurTableaux[k]) {
-      selection.injecteurTableaux[k] = new Set();
-    }
-    if (!selection.injecteurConvoyeurs[injecteurId]) {
-      selection.injecteurConvoyeurs[injecteurId] = new Set();
-    }
-
-    ["convoyeur", "motorisation"].forEach((type) => {
-      const typeLabel = type === "convoyeur" ? "Pièces" : "Motorisation";
-      const isActive = selection.injecteurTableaux[k].has(type);
-
-      const btn = document.createElement("button");
-      btn.type = "button";
+  function buildConvRow(injId, conv) {
+    const row = document.createElement("div"); row.className="planif-convoyeur-row";
+    const lbl = document.createElement("span"); lbl.className="planif-convoyeur-label"; lbl.textContent=conv.label;
+    const wrap = document.createElement("div"); wrap.className="planif-tableaux-wrap";
+    ["convoyeur","motorisation"].forEach((tt) => {
+      const isActive = sel.injecteurItems.some((x) => x.injecteurId===injId && x.convoyeurKey===conv.key && x.tableauType===tt);
+      const btn = document.createElement("button"); btn.type="button";
       btn.className = isActive ? "planif-select-btn active" : "planif-select-btn";
-      btn.textContent = typeLabel;
+      btn.textContent = tt === "convoyeur" ? "Pièces" : "Motorisation";
       btn.onclick = () => {
-        if (selection.injecteurTableaux[k].has(type)) {
-          selection.injecteurTableaux[k].delete(type);
+        const exists = sel.injecteurItems.some((x) => x.injecteurId===injId && x.convoyeurKey===conv.key && x.tableauType===tt);
+        if (exists) {
+          sel.injecteurItems = sel.injecteurItems.filter((x) => !(x.injecteurId===injId && x.convoyeurKey===conv.key && x.tableauType===tt));
+          btn.classList.remove("active");
         } else {
-          selection.injecteurTableaux[k].add(type);
-          selection.injecteurConvoyeurs[injecteurId].add(conv.key);
-          selection.injecteur.add(injecteurId);
+          sel.injecteurItems.push({injecteurId:injId, convoyeurKey:conv.key, tableauType:tt});
+          btn.classList.add("active");
         }
-        // Si plus aucun tableau pour ce convoyeur, retirer le convoyeur
-        if (selection.injecteurTableaux[k].size === 0) {
-          selection.injecteurConvoyeurs[injecteurId].delete(conv.key);
-        }
-        // Si plus aucun convoyeur pour cet injecteur, retirer l'injecteur
-        if (selection.injecteurConvoyeurs[injecteurId].size === 0) {
-          selection.injecteur.delete(injecteurId);
-        }
-        btn.className = selection.injecteurTableaux[k].has(type)
-          ? "planif-select-btn active"
-          : "planif-select-btn";
         updateSummary();
       };
-
-      tableauxWrap.appendChild(btn);
+      wrap.appendChild(btn);
     });
-
-    row.appendChild(convLabel);
-    row.appendChild(tableauxWrap);
+    row.appendChild(lbl); row.appendChild(wrap);
     return row;
   }
 
-  /* ---------- Résumé ---------- */
-
+  /* ---- Résumé ---- */
   const summaryBox = document.createElement("div");
-  summaryBox.className = "planif-summary";
+  summaryBox.className = "planif-summary planif-summary-empty";
 
   function updateSummary() {
     const lines = [];
-
-    if (selection.chariot.size > 0) {
-      lines.push(`Chariots : ${selection.chariot.size} sélectionné(s)`);
+    if (sel.chariot.size > 0)      lines.push(`${sel.chariot.size} chariot(s)`);
+    if (sel.groupeMoteur.size > 0) lines.push([...sel.groupeMoteur].map((g) => `GM${g}`).join(", "));
+    if (sel.sortie.size > 0)       lines.push(`${sel.sortie.size} sortie(s)`);
+    if (sel.injecteurItems.length > 0) {
+      const injIds = [...new Set(sel.injecteurItems.map((x) => x.injecteurId))];
+      lines.push(`Injecteur(s) : ${injIds.join(", ")}`);
     }
-    if (selection.groupeMoteur.size > 0) {
-      lines.push(`Groupes moteurs : ${[...selection.groupeMoteur].map((g) => `GM${g}`).join(", ")}`);
-    }
-    if (selection.sortie.size > 0) {
-      lines.push(`Sorties : ${selection.sortie.size} sélectionnée(s)`);
-    }
-    if (selection.injecteur.size > 0) {
-      [...selection.injecteur].forEach((id) => {
-        const convs = selection.injecteurConvoyeurs[id];
-        if (convs && convs.size > 0) {
-          lines.push(`Injecteur ${id} : ${convs.size} convoyeur(s)`);
-        }
-      });
-    }
-
     if (lines.length === 0) {
       summaryBox.textContent = "Aucun équipement sélectionné.";
       summaryBox.className = "planif-summary planif-summary-empty";
     } else {
-      summaryBox.innerHTML = "<strong>Récapitulatif :</strong><br>" + lines.join("<br>");
+      summaryBox.innerHTML = "<strong>Équipements :</strong> " + lines.join(" • ");
       summaryBox.className = "planif-summary planif-summary-filled";
+    }
+    if (typeof refreshAccordionCounts === "function") {
+      try { refreshAccordionCounts(); } catch(e) {}
     }
   }
 
-  /* ---------- Assemblage ---------- */
-
   equipSection.appendChild(equipLabel);
-  equipSection.appendChild(equipTabs);
-  equipSection.appendChild(panelContainer);
-  panelContainer.appendChild(buildPanel(activeEquip));
 
+  // Construire les accordéons pour chaque famille
+  equipTypes.forEach(({ id, label }) => {
+    const wrap = document.createElement("div");
+    wrap.className = "planif-accordion";
+    panelWrappers[id] = wrap;
+
+    const header = document.createElement("button");
+    header.type = "button";
+    header.className = panelOpen[id]
+      ? "planif-accordion-header open"
+      : "planif-accordion-header";
+
+    const headerLeft = document.createElement("span");
+    headerLeft.textContent = label;
+
+    const headerCount = document.createElement("span");
+    headerCount.className = "planif-accordion-count";
+    headerCount.id = `planif-count-${id}`;
+
+    const headerArrow = document.createElement("span");
+    headerArrow.className = "planif-accordion-arrow";
+    headerArrow.textContent = panelOpen[id] ? "▲" : "▼";
+
+    header.appendChild(headerLeft);
+    header.appendChild(headerCount);
+    header.appendChild(headerArrow);
+
+    const body = document.createElement("div");
+    body.className = panelOpen[id]
+      ? "planif-accordion-body open"
+      : "planif-accordion-body";
+    body.appendChild(buildPanel(id));
+
+    header.onclick = () => {
+      const isOpen = body.classList.contains("open");
+      body.classList.toggle("open", !isOpen);
+      header.classList.toggle("open", !isOpen);
+      headerArrow.textContent = !isOpen ? "▲" : "▼";
+    };
+
+    wrap.appendChild(header);
+    wrap.appendChild(body);
+    panelContainer.appendChild(wrap);
+  });
+
+  function refreshAccordionCounts() {
+    const counts = {
+      chariot:      sel.chariot.size,
+      groupeMoteur: sel.groupeMoteur.size,
+      sortie:       sel.sortie.size,
+      injecteur:    new Set(sel.injecteurItems.map((x) => x.injecteurId)).size
+    };
+    Object.keys(counts).forEach((id) => {
+      const el = document.getElementById(`planif-count-${id}`);
+      if (!el) return;
+      if (counts[id] > 0) {
+        el.textContent = `${counts[id]} sélectionné(s)`;
+        el.style.display = "inline-flex";
+      } else {
+        el.textContent = "";
+        el.style.display = "none";
+      }
+    });
+  }
+
+  equipSection.appendChild(panelContainer);
   box.appendChild(equipSection);
   box.appendChild(summaryBox);
 
-  /* ---------- Footer ---------- */
-
+  /* ---- Footer ---- */
   const footer = document.createElement("div");
   footer.className = "planif-footer";
 
   const btnAnnuler = document.createElement("button");
-  btnAnnuler.type = "button";
-  btnAnnuler.className = "back-button";
-  btnAnnuler.textContent = "Annuler";
+  btnAnnuler.type = "button"; btnAnnuler.className = "back-button"; btnAnnuler.textContent = "Annuler";
   btnAnnuler.onclick = () => overlay.remove();
 
   const btnPlanifier = document.createElement("button");
-  btnPlanifier.type = "button";
-  btnPlanifier.className = "model-save-button planif-btn-confirm";
+  btnPlanifier.type = "button"; btnPlanifier.className = "model-save-button planif-btn-confirm";
   btnPlanifier.textContent = "✓ Planifier";
   btnPlanifier.onclick = () => {
+    const nom = nomInput.value.trim() || "Préventif";
     const date = dateInput.value || getTodayDateString();
-    let nbTotal = 0;
 
-    // Chariots
-    selection.chariot.forEach((num) => {
-      const rows = getChariotRows(num);
-      planifierRows(rows, date);
-      nbTotal += rows.length;
-    });
+    // Construire la liste d'équipements
+    const equipements = [];
+    sel.chariot.forEach((id) => equipements.push({ type: "chariot", ids: [id] }));
+    sel.groupeMoteur.forEach((id) => equipements.push({ type: "groupeMoteur", ids: [id] }));
+    sel.sortie.forEach((id) => equipements.push({ type: "sortie", ids: [id] }));
+    sel.injecteurItems.forEach((item) => equipements.push({
+      type: "injecteur",
+      injecteurId: item.injecteurId,
+      convoyeurKey: item.convoyeurKey,
+      tableauType: item.tableauType
+    }));
 
-    // Groupes moteurs
-    selection.groupeMoteur.forEach((num) => {
-      const rows = getGroupeMoteurRows(num);
-      planifierRows(rows, date);
-      nbTotal += rows.length;
-    });
-
-    // Sorties
-    selection.sortie.forEach((num) => {
-      const rows = getSortieRows(num);
-      planifierRows(rows, date);
-      nbTotal += rows.length;
-    });
-
-    // Injecteurs
-    selection.injecteur.forEach((injecteurId) => {
-      const convs = selection.injecteurConvoyeurs[injecteurId];
-      if (!convs) return;
-      convs.forEach((convKey) => {
-        const k = `${injecteurId}_${convKey}`;
-        const tableaux = selection.injecteurTableaux[k];
-        if (!tableaux) return;
-        tableaux.forEach((type) => {
-          const rows = getInjecteurConvoyeurRows(injecteurId, convKey, type);
-          planifierRows(rows, date);
-          nbTotal += rows.length;
-        });
-      });
-    });
-
-    if (nbTotal === 0) {
-      alert("Aucun équipement sélectionné.");
+    if (equipements.length === 0) {
+      alert("Veuillez sélectionner au moins un équipement.");
       return;
     }
 
+    const plan = normalizePlanPreventif({
+      id: generatePlanId(),
+      nom,
+      recurrence: selectedRec,
+      dateCreation: getTodayDateString(),
+      prochaineEcheance: date,
+      equipements,
+      statut: "actif",
+      historiqueRealisations: []
+    });
+
+    DATA_PLANS_PREVENTIFS.push(plan);
     saveAll();
     overlay.remove();
     renderCurrentState();
 
-    // Confirmation visuelle
-    const msg = document.createElement("div");
-    msg.className = "planif-toast";
-    msg.textContent = `✓ Préventif planifié pour le ${date} — ${nbTotal} ligne(s) programmée(s)`;
-    document.body.appendChild(msg);
-    setTimeout(() => msg.remove(), 3500);
+    const toast = document.createElement("div");
+    toast.className = "planif-toast";
+    toast.textContent = `✓ "${nom}" planifié pour le ${formatDateFR(date)}`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3500);
   };
 
   footer.appendChild(btnAnnuler);
@@ -638,10 +457,126 @@ function openPlanificationPopup(preselect = {}) {
   box.appendChild(footer);
 
   overlay.appendChild(box);
-  overlay.onclick = (e) => {
-    if (e.target === overlay) overlay.remove();
-  };
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
   document.body.appendChild(overlay);
-
   updateSummary();
+}
+
+/* ====================================================
+   BLOC "PRÉVENTIFS PROGRAMMÉS" dans les tableaux
+==================================================== */
+
+function createPlansPreventifBlock(type, id, convoyeurKey, tableauType) {
+  const plans = getPlansForEquipement(type, id, convoyeurKey, tableauType);
+  if (!plans || plans.length === 0) return null;
+
+  const block = document.createElement("div");
+  block.className = "planif-block-equipement";
+
+  const blockTitle = document.createElement("div");
+  blockTitle.className = "planif-block-title";
+  blockTitle.textContent = "📋 Préventifs programmés";
+  block.appendChild(blockTitle);
+
+  plans.forEach((plan) => {
+    const card = document.createElement("div");
+    const echu = isPlanEchu(plan);
+    card.className = echu ? "planif-plan-card planif-plan-echu" : "planif-plan-card planif-plan-futur";
+
+    // En-tête carte
+    const cardHead = document.createElement("div");
+    cardHead.className = "planif-plan-head";
+
+    const planNom = document.createElement("span");
+    planNom.className = "planif-plan-nom";
+    planNom.textContent = plan.nom;
+
+    const planBadge = document.createElement("span");
+    planBadge.className = echu ? "planif-plan-badge planif-plan-badge-echu" : "planif-plan-badge planif-plan-badge-ok";
+    planBadge.textContent = echu ? "⏰ À réaliser" : "✅ Planifié";
+
+    cardHead.appendChild(planNom);
+    cardHead.appendChild(planBadge);
+    card.appendChild(cardHead);
+
+    // Infos
+    const cardInfo = document.createElement("div");
+    cardInfo.className = "planif-plan-info";
+    cardInfo.innerHTML =
+      `Échéance : <strong>${formatDateFR(plan.prochaineEcheance)}</strong> &nbsp;•&nbsp; ` +
+      `${getRecurrenceLabel(plan.recurrence)}`;
+    card.appendChild(cardInfo);
+
+    // Historique (dernier) 
+    if (plan.historiqueRealisations && plan.historiqueRealisations.length > 0) {
+      const last = plan.historiqueRealisations[plan.historiqueRealisations.length - 1];
+      const cardHist = document.createElement("div");
+      cardHist.className = "planif-plan-hist";
+      cardHist.textContent = `Dernière réalisation : ${formatDateFR(last.date)}`;
+      if (last.technicien) cardHist.textContent += ` par ${last.technicien}`;
+      card.appendChild(cardHist);
+    }
+
+    // Bouton valider (si échu)
+    if (echu) {
+      const validateRow = document.createElement("div");
+      validateRow.className = "planif-plan-validate-row";
+
+      const valDateInput = document.createElement("input");
+      valDateInput.type = "date";
+      valDateInput.className = "date-input";
+      valDateInput.value = getTodayDateString();
+
+      const valBtn = document.createElement("button");
+      valBtn.type = "button";
+      valBtn.className = "parts-action-btn parts-preventif-done-btn";
+      valBtn.textContent = "✓ Réalisé";
+      valBtn.onclick = (e) => {
+        e.preventDefault();
+        const dateVal = valDateInput.value || getTodayDateString();
+
+        // Enregistrer la réalisation
+        plan.historiqueRealisations.push({
+          date: dateVal,
+          planifieDate: plan.prochaineEcheance
+        });
+
+        // Calculer prochaine échéance
+        if (plan.recurrence === "ponctuel") {
+          plan.statut = "terminé";
+        } else {
+          const next = calcProchaineDateEcheance(dateVal, plan.recurrence);
+          plan.prochaineEcheance = next || plan.prochaineEcheance;
+        }
+
+        saveAll();
+        renderCurrentState();
+      };
+
+      validateRow.appendChild(valDateInput);
+      validateRow.appendChild(valBtn);
+      card.appendChild(validateRow);
+    }
+
+    // Bouton supprimer (admin seulement)
+    if (typeof adminUnlocked !== "undefined" && adminUnlocked === true) {
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "model-delete-button planif-plan-del-btn";
+      delBtn.textContent = "🗑 Supprimer ce plan";
+      delBtn.onclick = (e) => {
+        e.preventDefault();
+        if (!confirm(`Supprimer le plan "${plan.nom}" ?`)) return;
+        const idx = DATA_PLANS_PREVENTIFS.indexOf(plan);
+        if (idx !== -1) DATA_PLANS_PREVENTIFS.splice(idx, 1);
+        saveAll();
+        renderCurrentState();
+      };
+      card.appendChild(delBtn);
+    }
+
+    block.appendChild(card);
+  });
+
+  return block;
 }
