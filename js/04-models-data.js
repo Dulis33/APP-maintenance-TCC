@@ -312,9 +312,11 @@ function ensureGlobalProblemsArchive() {
 function normalizeRow(row = {}) {
   const safeRow = row && typeof row === "object" ? row : {};
   const isLegacyHs = safeRow.aChanger === true || safeRow.statut === "NOK";
+  // Migration aControler → controlePreventif (ancien format)
+  // Une fois décoché dans l'UI, aControler est mis à false, donc la migration ne se refait pas
   const isPreventif =
     normalizeBoolean(safeRow.controlePreventif) ||
-    normalizeBoolean(safeRow.aControler) ||
+    (normalizeBoolean(safeRow.aControler) && safeRow.controlePreventif !== false) ||
     normalizeBoolean(safeRow.aVerifier);
 
   return {

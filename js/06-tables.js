@@ -98,6 +98,11 @@ function createStateToggleButton(targetRow, config) {
 
     targetRow[prop] = targetRow[prop] !== true;
 
+    // Migration : si on décoche controlePreventif, effacer aussi l'ancien aControler
+    if (prop === "controlePreventif" && targetRow[prop] === false) {
+      targetRow.aControler = false;
+    }
+
     saveAll();
     renderCurrentState();
   };
@@ -276,141 +281,72 @@ function createAlignedActionRow() {
   return row;
 }
 
-function getTodayDateString() {
-  const d = new Date();
-  return [
-    d.getFullYear(),
-    String(d.getMonth() + 1).padStart(2, "0"),
-    String(d.getDate()).padStart(2, "0")
-  ].join("-");
-}
-
-function createPartsTable(model, rows, planContext) {
-  // planContext = { type, id, convoyeurKey, tableauType } pour afficher les plans
+function createPartsTable(model, rows) {
   const safeModel = Array.isArray(model) ? model : [];
-  const safeRows  = Array.isArray(rows)  ? rows  : [];
-
-  const container = document.createElement("div");
-  container.className = "parts-table-container";
-
-  // Bloc plans préventifs (si planContext fourni)
-  if (planContext && typeof createPlansPreventifBlock === "function") {
-    const plansBlock = createPlansPreventifBlock(
-      planContext.type,
-      planContext.id,
-      planContext.convoyeurKey,
-      planContext.tableauType
-    );
-    if (plansBlock) container.appendChild(plansBlock);
-  }
-
-  if (safeModel.length === 0) {
-    const wrapper = document.createElement("div");
-    wrapper.className = "table-wrapper";
-    const table  = document.createElement("table");
-    table.className = "parts-table";
-    table.appendChild(createTableHead(["Pièce","Référence","Repère","Date chgt","Date contrôle","Critique","À prévoir","À contrôler"]));
-    const tbody = document.createElement("tbody");
-    tbody.appendChild(createEmptyTableRow(8, "Aucune ligne définie."));
-    table.appendChild(tbody);
-    wrapper.appendChild(table);
-    container.appendChild(wrapper);
-    return container;
-  }
+  const safeRows = Array.isArray(rows) ? rows : [];
 
   const wrapper = document.createElement("div");
   wrapper.className = "table-wrapper";
+
   const table = document.createElement("table");
   table.className = "parts-table";
 
   table.appendChild(
     createTableHead([
-      "Pièce", "Référence", "Repère",
-      "Date chgt", "Date contrôle",
-      "Critique", "À prévoir", "À contrôler"
+      "Pièce",
+      "Référence",
+      "Repère",
+      "Date de changement",
+      "Date de contrôle",
+      "Critique",
+      "À prévoir",
+      "Contrôle préventif"
     ])
   );
 
   const tbody = document.createElement("tbody");
 
-  safeModel.forEach((item, index) => {
-    const row = safeRows[index] || createEmptyLocalRow();
-    const tr  = document.createElement("tr");
-    applyPieceRowClasses(tr, row);
+  if (safeModel.length === 0) {
+    tbody.appendChild(createEmptyTableRow(8, "Aucune ligne définie."));
+  } else {
+    safeModel.forEach((item, index) => {
+      const row = safeRows[index] || createEmptyLocalRow();
+      const tr = document.createElement("tr");
 
-    // Mention visuelle "à contrôler" si un plan est échu sur cet équipement
-    if (planContext && typeof getPlansForEquipement === "function") {
-      const plans = getPlansForEquipement(
-        planContext.type, planContext.id,
-        planContext.convoyeurKey, planContext.tableauType
-      );
-      if (plans.some((p) => typeof isPlanEchu === "function" && isPlanEchu(p))) {
-        tr.classList.add("row-a-controler");
-      }
-    }
+      applyPieceRowClasses(tr, row);
 
-    const tdPiece = document.createElement("td"); tdPiece.textContent = item?.piece || "";
-    const tdRef   = document.createElement("td"); tdRef.textContent   = item?.reference || "";
-    const tdRep   = document.createElement("td"); tdRep.textContent   = item?.repere || "";
+      const tdPiece = document.createElement("td");
+      tdPiece.textContent = item?.piece || "";
 
-    tr.appendChild(tdPiece);
-    tr.appendChild(tdRef);
-    tr.appendChild(tdRep);
-    tr.appendChild(createHistoryDateCell(row, "chgt"));
-    tr.appendChild(createHistoryDateCell(row, "ctrl"));
-    tr.appendChild(createPieceStatusCell(row, "critical"));
-    tr.appendChild(createPieceStatusCell(row, "warning"));
+      const tdReference = document.createElement("td");
+      tdReference.textContent = item?.reference || "";
 
-    // Colonne "À contrôler" — mention si plan échu, vide sinon
-    const tdCtrl = document.createElement("td");
-    tdCtrl.className = "planif-col-ctrl";
-    if (planContext && typeof getPlansForEquipement === "function") {
-      const echusPlans = (getPlansForEquipement(
-        planContext.type, planContext.id,
-        planContext.convoyeurKey, planContext.tableauType
-      ) || []).filter((p) => typeof isPlanEchu === "function" && isPlanEchu(p));
-      if (echusPlans.length > 0) {
-        const span = document.createElement("span");
-        span.className = "planif-col-ctrl-badge";
-        span.textContent = echusPlans.map((p) => p.nom).join(", ");
-        tdCtrl.appendChild(span);
-      }
-    }
-    tr.appendChild(tdCtrl);
+      const tdRepere = document.createElement("td");
+      tdRepere.textContent = item?.repere || "";
 
-    tbody.appendChild(tr);
-  });
+      tr.appendChild(tdPiece);
+      tr.appendChild(tdReference);
+      tr.appendChild(tdRepere);
+      tr.appendChild(createHistoryDateCell(row, "chgt"));
+      tr.appendChild(createHistoryDateCell(row, "ctrl"));
+      tr.appendChild(createPieceStatusCell(row, "critical"));
+      tr.appendChild(createPieceStatusCell(row, "warning"));
+      tr.appendChild(createPieceStatusCell(row, "control"));
+
+      tbody.appendChild(tr);
+    });
+  }
 
   table.appendChild(tbody);
   wrapper.appendChild(table);
-  container.appendChild(wrapper);
 
-  return container;
-}
-
-
-function inferPlanContext(store, key) {
-  // Déduire le planContext depuis le store et la clé
-  if (store === DATA_CHARIOTS) {
-    const num = parseInt(key.replace("chariot_", ""), 10);
-    return { type: "chariot", id: num };
-  }
-  if (store === DATA_GROUPE_MOTEUR) {
-    const num = parseInt(key.replace("groupe_moteur_", ""), 10);
-    return { type: "groupeMoteur", id: num };
-  }
-  if (store === DATA_SORTIES) {
-    const num = parseInt(key.replace("sortie_", ""), 10);
-    return { type: "sortie", id: num };
-  }
-  return null;
+  return wrapper;
 }
 
 function createTable(model, store, key) {
   const safeModel = Array.isArray(model) ? model : [];
   ensureLocalRows(store, key, safeModel);
-  const planContext = inferPlanContext(store, key);
-  return createPartsTable(safeModel, store[key], planContext);
+  return createPartsTable(safeModel, store[key]);
 }
 
 function createInjecteurPieceTable(injecteurNumber, convoyeurKey, type) {
@@ -430,14 +366,7 @@ function createInjecteurPieceTable(injecteurNumber, convoyeurKey, type) {
   const rows =
     DATA_INJECTEUR_CONVOYEURS[injecteurNumber]?.[convoyeurKey]?.[type] || [];
 
-  const planContext = {
-    type: "injecteur",
-    id: injecteurNumber,
-    convoyeurKey: convoyeurKey,
-    tableauType: type
-  };
-
-  return createPartsTable(model, rows, planContext);
+  return createPartsTable(model, rows);
 }
 
 function createCommentTextInput(value, placeholder, onInput) {
