@@ -1150,7 +1150,13 @@ function renderSuiviHubView() {
   clearView();
   appView.appendChild(createBackButton());
 
-  const tccCounters = normalizeCountersObject(countTccCounters());
+  // TCC avec plans échus inclus
+  const tccBase = normalizeCountersObject(countTccCounters());
+  const tccPlans = (typeof countPlansEchus === "function") ? countPlansEchus() : 0;
+  const tccCounters = normalizeCountersObject({
+    ...tccBase,
+    controlePreventif: (tccBase.controlePreventif || 0) + tccPlans
+  });
   const transitiqueCounters =
     typeof countTransitiqueCounters === "function"
       ? normalizeCountersObject(countTransitiqueCounters())

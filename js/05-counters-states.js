@@ -720,3 +720,33 @@ function countChariotTotalCountersWithPlans(chariotNumber) {
     "chariot", chariotNumber
   );
 }
+
+// Versions WithPlans des compteurs agrégés
+function countAllSortiesCountersWithPlans() {
+  let total = countAllSortiesCounters();
+  const n = countPlansEchusByType("sortie");
+  if (n > 0) total = addCounters(total, normalizeCountersObject({ controlePreventif: n }));
+  return total;
+}
+
+function countAllGroupesMoteurCountersWithPlans() {
+  let total = countAllGroupesMoteurCounters();
+  const n = countPlansEchusByType("groupeMoteur");
+  if (n > 0) total = addCounters(total, normalizeCountersObject({ controlePreventif: n }));
+  return total;
+}
+
+function countAllInjecteursCountersWithPlans() {
+  let total = countAllInjecteursCounters();
+  const n = countPlansEchusByType("injecteur");
+  if (n > 0) total = addCounters(total, normalizeCountersObject({ controlePreventif: n }));
+  return total;
+}
+
+function countTrieurCountersWithPlans() {
+  let total = countTrieurCounters();
+  const nGM = countPlansEchusByType("groupeMoteur");
+  const nCh = countPlansEchusByType("chariot");
+  if (nGM + nCh > 0) total = addCounters(total, normalizeCountersObject({ controlePreventif: nGM + nCh }));
+  return total;
+}

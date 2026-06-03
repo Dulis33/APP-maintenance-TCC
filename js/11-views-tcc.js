@@ -209,7 +209,7 @@ function renderTccView() {
       () => setState("trieur"),
       "big",
       "primary",
-      countTrieurCounters(),
+      countTrieurCountersWithPlans(),
       "Train 1 • Train 2 • Groupe moteur"
     )
   );
@@ -220,7 +220,7 @@ function renderTccView() {
       () => setState("injecteurs"),
       "big",
       "primary",
-      countAllInjecteursCounters(),
+      countAllInjecteursCountersWithPlans(),
       "530 • 531 • 532 • 533"
     )
   );
@@ -231,7 +231,7 @@ function renderTccView() {
       () => setState("sorties"),
       "big",
       "primary",
-      countAllSortiesCounters(),
+      countAllSortiesCountersWithPlans(),
       "39 à 51"
     )
   );
@@ -269,7 +269,7 @@ function renderTrieurView() {
       () => setState("groupeMoteur"),
       "big",
       "primary",
-      countAllGroupesMoteurCounters(),
+      countAllGroupesMoteurCountersWithPlans(),
       "Groupes 1-2 à 13-14"
     )
   );
