@@ -132,16 +132,21 @@ function isPlanEchu(plan) {
 }
 
 function getPlansForEquipement(type, id, convoyeurKey, tableauType) {
+  const numId = typeof id === "string" ? parseInt(id, 10) : id;
   return DATA_PLANS_PREVENTIFS.filter((plan) => {
     if (!plan || plan.statut !== "actif") return false;
     return plan.equipements.some((eq) => {
       if (eq.type !== type) return false;
       if (type === "injecteur") {
-        return eq.injecteurId === id
+        const eqId = typeof eq.injecteurId === "string" ? parseInt(eq.injecteurId, 10) : eq.injecteurId;
+        return eqId === numId
           && (!convoyeurKey || eq.convoyeurKey === convoyeurKey)
           && (!tableauType || eq.tableauType === tableauType);
       }
-      return Array.isArray(eq.ids) && eq.ids.includes(id);
+      return Array.isArray(eq.ids) && eq.ids.some((i) => {
+        const ni = typeof i === "string" ? parseInt(i, 10) : i;
+        return ni === numId;
+      });
     });
   });
 }

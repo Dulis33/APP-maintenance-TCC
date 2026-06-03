@@ -389,10 +389,28 @@ function createPartsTable(model, rows, planContext) {
 }
 
 
+function inferPlanContext(store, key) {
+  // Déduire le planContext depuis le store et la clé
+  if (store === DATA_CHARIOTS) {
+    const num = parseInt(key.replace("chariot_", ""), 10);
+    return { type: "chariot", id: num };
+  }
+  if (store === DATA_GROUPE_MOTEUR) {
+    const num = parseInt(key.replace("groupe_moteur_", ""), 10);
+    return { type: "groupeMoteur", id: num };
+  }
+  if (store === DATA_SORTIES) {
+    const num = parseInt(key.replace("sortie_", ""), 10);
+    return { type: "sortie", id: num };
+  }
+  return null;
+}
+
 function createTable(model, store, key) {
   const safeModel = Array.isArray(model) ? model : [];
   ensureLocalRows(store, key, safeModel);
-  return createPartsTable(safeModel, store[key]);
+  const planContext = inferPlanContext(store, key);
+  return createPartsTable(safeModel, store[key], planContext);
 }
 
 function createInjecteurPieceTable(injecteurNumber, convoyeurKey, type) {
@@ -412,7 +430,14 @@ function createInjecteurPieceTable(injecteurNumber, convoyeurKey, type) {
   const rows =
     DATA_INJECTEUR_CONVOYEURS[injecteurNumber]?.[convoyeurKey]?.[type] || [];
 
-  return createPartsTable(model, rows);
+  const planContext = {
+    type: "injecteur",
+    id: injecteurNumber,
+    convoyeurKey: convoyeurKey,
+    tableauType: type
+  };
+
+  return createPartsTable(model, rows, planContext);
 }
 
 function createCommentTextInput(value, placeholder, onInput) {
