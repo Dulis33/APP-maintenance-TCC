@@ -3556,6 +3556,25 @@ button.cellule-state-pill {
   /* cellule-grid reste toujours en 4 colonnes */
 }
 
+/* Ligne titre + bouton Afficher/Masquer — style global */
+.dashboard-state-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.dashboard-state-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 /* Bouton Afficher/Masquer — style global (indépendant de home-screen-fit) */
 .dashboard-state-toggle-btn {
   flex: 0 0 auto;
@@ -4607,4 +4626,181 @@ body.home-fit-emergency.home-screen-fit #appView:has(.problem-home-button) > .bi
 .auth-login-btn:hover {
   border-color: rgba(74, 144, 196, 0.4) !important;
   color: var(--blue-text) !important;
+}
+
+/* =========================
+   BLOC PLANS PRÉVENTIFS (dans les tableaux)
+========================= */
+
+.planif-block-equipement {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 12px 14px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.planif-block-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 2px;
+}
+
+/* Carte d'un plan */
+.planif-plan-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.planif-plan-echu {
+  background: rgba(246, 173, 85, 0.08);
+  border-color: rgba(246, 173, 85, 0.3);
+}
+
+.planif-plan-futur {
+  background: rgba(72, 187, 120, 0.06);
+  border-color: rgba(72, 187, 120, 0.2);
+}
+
+.planif-plan-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.planif-plan-nom {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.planif-plan-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.planif-plan-badge-echu {
+  background: rgba(246, 173, 85, 0.15);
+  color: #f6ad55;
+  border: 1px solid rgba(246, 173, 85, 0.3);
+}
+
+.planif-plan-badge-ok {
+  background: rgba(72, 187, 120, 0.12);
+  color: #48bb78;
+  border: 1px solid rgba(72, 187, 120, 0.25);
+}
+
+.planif-plan-info {
+  font-size: 12px;
+  color: var(--text-soft);
+  line-height: 1.4;
+}
+
+.planif-plan-hist {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.planif-plan-validate-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.planif-plan-validate-row .date-input {
+  flex: 0 0 auto;
+  width: 145px;
+}
+
+.planif-plan-del-btn {
+  margin-top: 4px;
+  width: auto !important;
+  min-height: 30px !important;
+  padding: 4px 12px !important;
+  font-size: 11px !important;
+}
+
+/* Colonne "À contrôler" dans le tableau */
+.planif-col-ctrl {
+  min-width: 80px;
+  max-width: 160px;
+}
+
+.planif-col-ctrl-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(246, 173, 85, 0.15);
+  color: #f6ad55;
+  font-size: 10px;
+  font-weight: 700;
+  border: 1px solid rgba(246, 173, 85, 0.25);
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.3;
+}
+
+/* Récurrence buttons dans le formulaire */
+.planif-rec-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.planif-rec-btn {
+  padding: 7px 13px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  color: var(--text-soft);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', Arial, sans-serif;
+  transition: all 0.12s ease;
+  white-space: nowrap;
+}
+
+.planif-rec-btn.active {
+  background: linear-gradient(135deg, #2563a8, #1a3f6f);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 3px 8px rgba(26, 63, 111, 0.35);
+}
+
+@media (max-width: 600px) {
+  .planif-plan-validate-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .planif-plan-validate-row .date-input {
+    width: 100%;
+  }
+  .planif-rec-grid {
+    flex-direction: column;
+  }
+  .planif-rec-btn {
+    width: 100%;
+  }
 }
