@@ -27,18 +27,18 @@ function buildGlobalNavigationCounters() {
   const tcc = normalizeCountersObject(countTccRawCounters());
   const transitique = normalizeCountersObject(countTransitiqueRawCounters());
   const cellStatesRaw = countCelluleStatesGlobal();
-  // Plans préventifs échus → remontent en controlePreventif
-  const plansEchus = typeof countPlansEchus === "function" ? countPlansEchus() : 0;
 
   return normalizeCountersObject({
-    critical: tcc.critical + transitique.critical,
-    warning: tcc.warning + transitique.warning,
-    control: tcc.control + transitique.control,
-    comments: 0,
+    critical:   tcc.critical   + transitique.critical,
+    warning:    tcc.warning    + transitique.warning,
+    control:    tcc.control    + transitique.control,
+    comments:   0,
     openProblems: countGlobalProblems(),
-    celluleDefaut: Number(cellStatesRaw?.defaut) || 0,
-    celluleInhibee: Number(cellStatesRaw?.inhibee) || 0,
-    controlePreventif: (Number(cellStatesRaw?.controlePreventif) || 0) + plansEchus
+    celluleDefaut:  Number(cellStatesRaw?.defaut)   || 0,
+    celluleInhibee: Number(cellStatesRaw?.inhibee)  || 0,
+    // cellules + plans échus (déjà inclus dans tcc via countTccCounters WithPlans)
+    controlePreventif: (Number(cellStatesRaw?.controlePreventif) || 0)
+      + (tcc.controlePreventif || 0)
   });
 }
 
@@ -253,14 +253,16 @@ function buildHomeDetailFamilyCounters() {
     controlePreventif: Number(cellStates.controlePreventif) || 0
   });
 
+  // Chariots : directs + plans échus
   result.chariot = sumDirectCounters(
     CONFIG_APP.CHARIOT_MIN,
     CONFIG_APP.CHARIOT_MAX,
-    typeof countChariotDirectCounters === "function" ? countChariotDirectCounters : null
+    typeof countChariotDirectCountersWithPlans === "function" ? countChariotDirectCountersWithPlans : null
   );
 
+  // Groupes moteurs : avec plans échus
   result.groupeMoteur = safeCount(
-    typeof countAllGroupesMoteurCounters === "function" ? countAllGroupesMoteurCounters : null
+    typeof countAllGroupesMoteurCountersWithPlans === "function" ? countAllGroupesMoteurCountersWithPlans : null
   );
 
   let energyCounters = createEmptyCounters();
@@ -272,26 +274,15 @@ function buildHomeDetailFamilyCounters() {
   }
   result.energybox = normalizeCountersObject(energyCounters);
 
+  // Injecteurs : avec plans échus
   result.injecteur = safeCount(
-    typeof countAllInjecteursCounters === "function" ? countAllInjecteursCounters : null
+    typeof countAllInjecteursCountersWithPlans === "function" ? countAllInjecteursCountersWithPlans : null
   );
 
+  // Sorties : avec plans échus
   result.sortie = safeCount(
-    typeof countAllSortiesCounters === "function" ? countAllSortiesCounters : null
+    typeof countAllSortiesCountersWithPlans === "function" ? countAllSortiesCountersWithPlans : null
   );
-
-  // Ajouter les plans préventifs échus par famille
-  if (typeof countPlansEchusByType === "function") {
-    ["chariot", "groupeMoteur", "sortie", "injecteur"].forEach((type) => {
-      const n = countPlansEchusByType(type);
-      if (n > 0 && result[type]) {
-        result[type] = normalizeCountersObject({
-          ...result[type],
-          controlePreventif: (result[type].controlePreventif || 0) + n
-        });
-      }
-    });
-  }
 
   // Sécurité : on complète avec les lignes collectées du détail des anomalies.
   // Cela évite qu'une donnée ancienne ou manuelle échappe aux compteurs par famille.

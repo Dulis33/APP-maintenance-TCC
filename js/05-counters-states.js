@@ -426,9 +426,9 @@ function countGlobalProblems() {
 
 function countTccCounters() {
   let total = createEmptyCounters();
-  total = addCounters(total, countTrieurCounters());
-  total = addCounters(total, countAllInjecteursCounters());
-  total = addCounters(total, countAllSortiesCounters());
+  total = addCounters(total, countTrieurCountersWithPlans());
+  total = addCounters(total, countAllInjecteursCountersWithPlans());
+  total = addCounters(total, countAllSortiesCountersWithPlans());
   return total;
 }
 
@@ -566,7 +566,7 @@ function getChariotButtonClasses(chariotNumber) {
   }
 
   const stateClass = getButtonStateClassFromCounters(
-    countChariotTotalCounters(chariotNumber)
+    countChariotTotalCountersWithPlans(chariotNumber)
   );
 
   if (stateClass) {
