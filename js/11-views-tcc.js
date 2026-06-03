@@ -303,7 +303,7 @@ function renderTrain1View() {
         () => setState("chariot", { chariotNumber: i }),
         "medium",
         `chariot-compact ${getChariotButtonClasses(i)}`,
-        countChariotTotalCounters(i),
+        countChariotTotalCountersWithPlans(i),
         `Cellules ${cell1} / ${cell2}`
       )
     );
@@ -340,7 +340,7 @@ function renderTrain2View() {
         () => setState("chariot", { chariotNumber: i }),
         "medium",
         `chariot-compact ${getChariotButtonClasses(i)}`,
-        countChariotTotalCounters(i),
+        countChariotTotalCountersWithPlans(i),
         `Cellules ${cell1} / ${cell2}`
       )
     );
@@ -442,7 +442,7 @@ function renderGroupeMoteurView() {
         () => setState("groupeMoteurDetail", { groupNumber: i }),
         "medium",
         getGroupeMoteurButtonClasses(i),
-        countGroupeMoteurCounters(i),
+        countGroupeMoteurCountersWithPlans(i),
         "Pièces + commentaires"
       )
     );
@@ -2177,7 +2177,7 @@ function renderSortiesView() {
         () => setState("sortie", { sortieNumber: i }),
         "medium",
         getSortieButtonClasses(i),
-        countSortieCounters(i),
+        countSortieCountersWithPlans(i),
         sortieLabel
           ? `${sortieLabel} • Pièces + commentaires`
           : "Pièces + commentaires"

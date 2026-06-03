@@ -611,7 +611,7 @@ function renderInjecteursView() {
         () => setState("injecteurDetail", { injecteurNumber }),
         "medium",
         getInjecteurButtonClasses(injecteurNumber),
-        countInjecteurTotalCounters(injecteurNumber),
+        countInjecteurTotalCountersWithPlans(injecteurNumber),
         "Commentaires • Convoyeurs"
       )
     );

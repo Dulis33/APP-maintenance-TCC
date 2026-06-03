@@ -712,3 +712,11 @@ function countInjecteurTotalCountersWithPlans(injecteurNumber) {
   }
   return base;
 }
+
+// Version WithPlans de countChariotTotalCounters (inclut cellules + plans échus)
+function countChariotTotalCountersWithPlans(chariotNumber) {
+  return addPlanEchuToCounters(
+    countChariotTotalCounters(chariotNumber),
+    "chariot", chariotNumber
+  );
+}
