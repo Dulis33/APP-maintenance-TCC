@@ -438,6 +438,15 @@ function countTccRawCounters() {
   return total;
 }
 
+// Compte les plans préventifs échus (toutes familles confondues)
+function countPlansEchus() {
+  if (
+    typeof DATA_PLANS_PREVENTIFS === "undefined" ||
+    typeof isPlanEchu !== "function"
+  ) return 0;
+  return DATA_PLANS_PREVENTIFS.filter((p) => isPlanEchu(p)).length;
+}
+
 function countTransitiqueRawCounters() {
   return createEmptyCounters();
 }
@@ -629,4 +638,15 @@ function countCelluleStatesGlobal() {
   }
 
   return { defaut, inhibee, aControler, controlePreventif };
+}
+// Compte les plans échus pour un type d'équipement donné
+function countPlansEchusByType(type) {
+  if (
+    typeof DATA_PLANS_PREVENTIFS === "undefined" ||
+    typeof isPlanEchu !== "function"
+  ) return 0;
+  return DATA_PLANS_PREVENTIFS.filter((p) => {
+    if (!isPlanEchu(p)) return false;
+    return p.equipements && p.equipements.some((eq) => eq.type === type);
+  }).length;
 }

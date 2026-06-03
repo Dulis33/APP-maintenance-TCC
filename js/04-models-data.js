@@ -125,10 +125,14 @@ function normalizePlanPreventif(plan = {}) {
 function isPlanEchu(plan) {
   if (!plan || plan.statut !== "actif") return false;
   if (!plan.prochaineEcheance) return false;
+  // Comparaison directe YYYY-MM-DD évite le bug timezone UTC
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const echeance = new Date(plan.prochaineEcheance);
-  return echeance <= today;
+  const todayStr = [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, "0"),
+    String(today.getDate()).padStart(2, "0")
+  ].join("-");
+  return plan.prochaineEcheance <= todayStr;
 }
 
 function getPlansForEquipement(type, id, convoyeurKey, tableauType) {
