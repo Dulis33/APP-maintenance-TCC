@@ -4804,3 +4804,85 @@ body.home-fit-emergency.home-screen-fit #appView:has(.problem-home-button) > .bi
     width: 100%;
   }
 }
+
+/* =========================
+   ACCORDÉONS PLANIFICATION
+========================= */
+
+.planif-all-panels {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.planif-accordion {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.planif-accordion-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--surface-raised);
+  border: none;
+  cursor: pointer;
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-soft);
+  text-align: left;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.planif-accordion-header:hover {
+  background: var(--surface-card);
+  color: var(--text);
+}
+
+.planif-accordion-header.open {
+  background: var(--surface-card);
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+
+.planif-accordion-count {
+  display: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(37, 99, 168, 0.15);
+  color: var(--blue-text);
+  font-size: 10px;
+  font-weight: 700;
+  border: 1px solid rgba(37, 99, 168, 0.2);
+  flex: 1 1 auto;
+  margin-left: 6px;
+}
+
+.planif-accordion-arrow {
+  flex: 0 0 auto;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.planif-accordion-body {
+  display: none;
+  padding: 12px;
+  background: var(--surface-soft);
+}
+
+.planif-accordion-body.open {
+  display: block;
+}
+
+@media (max-width: 600px) {
+  .planif-accordion-header {
+    padding: 9px 12px;
+    font-size: 12px;
+  }
+}

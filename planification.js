@@ -118,51 +118,38 @@ function openPlanificationPopup(preselect = {}) {
   equipLabel.className = "planif-section-label";
   equipLabel.textContent = "Équipements concernés";
 
-  const equipTabs = document.createElement("div");
-  equipTabs.className = "planif-tabs";
-
   const equipTypes = [
-    { id: "chariot",     label: "Chariots" },
-    { id: "groupeMoteur", label: "Groupes moteurs" },
-    { id: "injecteur",   label: "Injecteurs" },
-    { id: "sortie",      label: "Sorties" }
+    { id: "chariot",      label: "🚃 Chariots",       icon: "🚃" },
+    { id: "groupeMoteur", label: "⚙️ Groupes moteurs", icon: "⚙️" },
+    { id: "injecteur",    label: "📦 Injecteurs",      icon: "📦" },
+    { id: "sortie",       label: "🚪 Sorties",         icon: "🚪" }
   ];
 
-  let activeEquip = preselect.type || "chariot";
-  const tabBtns = {};
+  // Tous les panneaux visibles simultanément, pliables
   const panelContainer = document.createElement("div");
-  panelContainer.className = "planif-panel-container";
+  panelContainer.className = "planif-panel-container planif-all-panels";
 
   /* State */
   const sel = {
     chariot:      new Set(preselect.type === "chariot"      ? (preselect.ids || []) : []),
     groupeMoteur: new Set(preselect.type === "groupeMoteur" ? (preselect.ids || []) : []),
     sortie:       new Set(preselect.type === "sortie"       ? (preselect.ids || []) : []),
-    injecteurItems: [] /* [{injecteurId, convoyeurKey, tableauType}] */
+    injecteurItems: []
   };
 
   if (preselect.type === "injecteur" && preselect.injecteurItems) {
     sel.injecteurItems = preselect.injecteurItems;
   }
 
-  function switchTab(type) {
-    activeEquip = type;
-    Object.keys(tabBtns).forEach((t) => {
-      tabBtns[t].className = t === type ? "planif-tab active" : "planif-tab";
-    });
-    panelContainer.replaceChildren(buildPanel(type));
-    updateSummary();
-  }
+  // État ouvert/fermé des panneaux
+  const panelOpen = {
+    chariot:      preselect.type === "chariot"      || false,
+    groupeMoteur: preselect.type === "groupeMoteur" || false,
+    injecteur:    preselect.type === "injecteur"    || false,
+    sortie:       preselect.type === "sortie"       || false
+  };
 
-  equipTypes.forEach(({ id, label }) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = id === activeEquip ? "planif-tab active" : "planif-tab";
-    btn.textContent = label;
-    btn.onclick = () => switchTab(id);
-    tabBtns[id] = btn;
-    equipTabs.appendChild(btn);
-  });
+  const panelWrappers = {};
 
   /* ---- Builders panneaux ---- */
   function mkToggle(label, isActive, onToggle) {
@@ -334,12 +321,79 @@ function openPlanificationPopup(preselect = {}) {
       summaryBox.innerHTML = "<strong>Équipements :</strong> " + lines.join(" • ");
       summaryBox.className = "planif-summary planif-summary-filled";
     }
+    if (typeof refreshAccordionCounts === "function") {
+      try { refreshAccordionCounts(); } catch(e) {}
+    }
   }
 
   equipSection.appendChild(equipLabel);
-  equipSection.appendChild(equipTabs);
+
+  // Construire les accordéons pour chaque famille
+  equipTypes.forEach(({ id, label }) => {
+    const wrap = document.createElement("div");
+    wrap.className = "planif-accordion";
+    panelWrappers[id] = wrap;
+
+    const header = document.createElement("button");
+    header.type = "button";
+    header.className = panelOpen[id]
+      ? "planif-accordion-header open"
+      : "planif-accordion-header";
+
+    const headerLeft = document.createElement("span");
+    headerLeft.textContent = label;
+
+    const headerCount = document.createElement("span");
+    headerCount.className = "planif-accordion-count";
+    headerCount.id = `planif-count-${id}`;
+
+    const headerArrow = document.createElement("span");
+    headerArrow.className = "planif-accordion-arrow";
+    headerArrow.textContent = panelOpen[id] ? "▲" : "▼";
+
+    header.appendChild(headerLeft);
+    header.appendChild(headerCount);
+    header.appendChild(headerArrow);
+
+    const body = document.createElement("div");
+    body.className = panelOpen[id]
+      ? "planif-accordion-body open"
+      : "planif-accordion-body";
+    body.appendChild(buildPanel(id));
+
+    header.onclick = () => {
+      const isOpen = body.classList.contains("open");
+      body.classList.toggle("open", !isOpen);
+      header.classList.toggle("open", !isOpen);
+      headerArrow.textContent = !isOpen ? "▲" : "▼";
+    };
+
+    wrap.appendChild(header);
+    wrap.appendChild(body);
+    panelContainer.appendChild(wrap);
+  });
+
+  function refreshAccordionCounts() {
+    const counts = {
+      chariot:      sel.chariot.size,
+      groupeMoteur: sel.groupeMoteur.size,
+      sortie:       sel.sortie.size,
+      injecteur:    new Set(sel.injecteurItems.map((x) => x.injecteurId)).size
+    };
+    Object.keys(counts).forEach((id) => {
+      const el = document.getElementById(`planif-count-${id}`);
+      if (!el) return;
+      if (counts[id] > 0) {
+        el.textContent = `${counts[id]} sélectionné(s)`;
+        el.style.display = "inline-flex";
+      } else {
+        el.textContent = "";
+        el.style.display = "none";
+      }
+    });
+  }
+
   equipSection.appendChild(panelContainer);
-  panelContainer.appendChild(buildPanel(activeEquip));
   box.appendChild(equipSection);
   box.appendChild(summaryBox);
 
