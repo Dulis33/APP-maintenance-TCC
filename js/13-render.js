@@ -219,6 +219,10 @@ case "chariotPieces":
       );
       break;
 
+    case "calendrierPreventifs":
+      if (typeof renderCalendrierPreventifs === "function") renderCalendrierPreventifs();
+      break;
+
     case "admin":
       renderAdminView();
       break;

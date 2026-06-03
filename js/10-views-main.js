@@ -1011,6 +1011,18 @@ function renderHomeView() {
 
   appView.appendChild(createHomeImportExportBlock());
 
+  // Bouton "Calendrier des préventifs" — visible pour tous
+  appView.appendChild(
+    createButton(
+      "📅 Calendrier des préventifs",
+      () => setState("calendrierPreventifs"),
+      "admin",
+      "",
+      null,
+      "Voir les préventifs programmés"
+    )
+  );
+
   // ── Zone encadrant ──────────────────────────────────
   const isAdmin = typeof adminUnlocked !== "undefined" && adminUnlocked === true;
 
