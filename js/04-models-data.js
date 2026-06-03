@@ -312,20 +312,16 @@ function ensureGlobalProblemsArchive() {
 function normalizeRow(row = {}) {
   const safeRow = row && typeof row === "object" ? row : {};
   const isLegacyHs = safeRow.aChanger === true || safeRow.statut === "NOK";
-  // Migration aControler → controlePreventif (ancien format)
-  // Une fois décoché dans l'UI, aControler est mis à false, donc la migration ne se refait pas
-  const isPreventif =
-    normalizeBoolean(safeRow.controlePreventif) ||
-    (normalizeBoolean(safeRow.aControler) && safeRow.controlePreventif !== false) ||
-    normalizeBoolean(safeRow.aVerifier);
+
+  // Plus de migration aControler → on lit uniquement controlePreventif
+  // Les anciens JSON avec aControler:true ne remontent plus automatiquement
+  const isPreventif = normalizeBoolean(safeRow.controlePreventif);
 
   return {
     dateChgt: safeRow.dateChgt || "",
     dateCtrl: safeRow.dateCtrl || "",
     critique: safeRow.critique === true || isLegacyHs,
     aPrevoir: safeRow.aPrevoir === true && !(safeRow.critique === true || isLegacyHs),
-    // À contrôler est réservé au suivi J+1 des cellules.
-    // Sur les lignes de pièces, l'ancien À contrôler est migré en Contrôle préventif.
     aControler: false,
     controlePreventif: isPreventif,
     historiqueChgt: cloneStringArray(safeRow.historiqueChgt),
@@ -336,10 +332,9 @@ function normalizeRow(row = {}) {
 function normalizeInjecteurPieceRow(row = {}) {
   const safeRow = row && typeof row === "object" ? row : {};
   const isLegacyCritical = safeRow.critique === true || safeRow.aChanger === true;
-  const isPreventif =
-    normalizeBoolean(safeRow.controlePreventif) ||
-    normalizeBoolean(safeRow.aControler) ||
-    normalizeBoolean(safeRow.aVerifier);
+
+  // Plus de migration aControler → uniquement controlePreventif
+  const isPreventif = normalizeBoolean(safeRow.controlePreventif);
 
   return {
     dateChgt: safeRow.dateChgt || "",

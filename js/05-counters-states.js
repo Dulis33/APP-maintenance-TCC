@@ -100,7 +100,7 @@ function countRowsFlags(rows, options = {}) {
     0,
     0,
     0,
-    safeRows.some((row) => row?.controlePreventif === true || row?.aControler === true) ? 1 : 0
+    safeRows.some((row) => row?.controlePreventif === true) ? 1 : 0
   );
 }
 
@@ -125,7 +125,7 @@ function countCommentEntries(store, key, options = {}) {
 
   const hasPreventif =
     !!headerRow?.controlePreventif ||
-    visibleRows.some((item) => item?.controlePreventif === true || item?.aControler === true);
+    visibleRows.some((item) => item?.controlePreventif === true);
 
   const hasComments = false;
 
