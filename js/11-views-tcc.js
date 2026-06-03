@@ -122,68 +122,19 @@ function createCelluleHeaderStates(celluleNumber) {
 function createStandardHeaderControl(title, store, key, planContext) {
   const stateItem = ensureElementCommentState(store, key);
 
-  // Sur tous les éléments hors cellule, l'ancien état À contrôler devient Contrôle préventif.
-  if (stateItem.aControler === true && stateItem.controlePreventif !== true) {
-    stateItem.controlePreventif = true;
+  // Migration : l'ancien état À contrôler devient Contrôle préventif
+  // puis on le remet à false pour ne plus afficher le bouton
+  if (stateItem.aControler === true) {
     stateItem.aControler = false;
+    if (stateItem.controlePreventif !== false) {
+      stateItem.controlePreventif = false;
+    }
     saveAll();
   }
 
-  // Détecter plans échus pour cet équipement
-  let nbPlansEchus = 0;
-  let hasPlans = false;
-  if (
-    planContext &&
-    typeof getPlansForEquipement === "function" &&
-    typeof isPlanEchu === "function"
-  ) {
-    const plans = getPlansForEquipement(
-      planContext.type, planContext.id,
-      planContext.convoyeurKey, planContext.tableauType
-    );
-    hasPlans = plans && plans.length > 0;
-    nbPlansEchus = plans ? plans.filter((p) => isPlanEchu(p)).length : 0;
-  }
-
-  // Label dynamique selon les plans
-  let btnLabel = "Contrôle préventif";
-  if (nbPlansEchus > 0) {
-    btnLabel = `⏰ ${nbPlansEchus} préventif${nbPlansEchus > 1 ? "s" : ""} à réaliser`;
-  } else if (hasPlans) {
-    btnLabel = `📋 Préventif planifié`;
-  }
-
-  const controlBtn = createElementStateToggleButton({
-    target: stateItem,
-    prop: "controlePreventif",
-    label: btnLabel,
-    title: nbPlansEchus > 0
-      ? `${nbPlansEchus} préventif(s) à réaliser`
-      : `${title} en contrôle préventif`,
-    activeClass: nbPlansEchus > 0 ? "warning" : "preventif"
-  });
-
-  // Si plans échus → activer visuellement le bouton automatiquement
-  if (nbPlansEchus > 0) {
-    controlBtn.classList.add("active");
-  }
-
-  // Clic → scroll vers le bloc plans
-  if (hasPlans) {
-    const originalOnClick = controlBtn.onclick;
-    controlBtn.onclick = (e) => {
-      // Scroll vers le bloc préventifs
-      setTimeout(() => {
-        const planBlock = document.querySelector(".planif-block-equipement");
-        if (planBlock) {
-          planBlock.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-      }, 100);
-      if (originalOnClick) originalOnClick.call(controlBtn, e);
-    };
-  }
-
-  return createElementStateToolbar("", [controlBtn]);
+  // Le bouton "Contrôle préventif" est supprimé — les plans s'affichent
+  // directement dans le bloc "Préventifs programmés" du tableau de pièces
+  return document.createDocumentFragment();
 }
 
 function createViewGrid(className = "grid") {
