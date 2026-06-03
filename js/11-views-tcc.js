@@ -119,7 +119,7 @@ function createCelluleHeaderStates(celluleNumber) {
   return createElementStateToolbar("", [inhibeeBtn, defautBtn, controlBtn, preventiveBtn]);
 }
 
-function createStandardHeaderControl(title, store, key) {
+function createStandardHeaderControl(title, store, key, planContext) {
   const stateItem = ensureElementCommentState(store, key);
 
   // Sur tous les éléments hors cellule, l'ancien état À contrôler devient Contrôle préventif.
@@ -129,13 +129,59 @@ function createStandardHeaderControl(title, store, key) {
     saveAll();
   }
 
+  // Détecter plans échus pour cet équipement
+  let nbPlansEchus = 0;
+  let hasPlans = false;
+  if (
+    planContext &&
+    typeof getPlansForEquipement === "function" &&
+    typeof isPlanEchu === "function"
+  ) {
+    const plans = getPlansForEquipement(
+      planContext.type, planContext.id,
+      planContext.convoyeurKey, planContext.tableauType
+    );
+    hasPlans = plans && plans.length > 0;
+    nbPlansEchus = plans ? plans.filter((p) => isPlanEchu(p)).length : 0;
+  }
+
+  // Label dynamique selon les plans
+  let btnLabel = "Contrôle préventif";
+  if (nbPlansEchus > 0) {
+    btnLabel = `⏰ ${nbPlansEchus} préventif${nbPlansEchus > 1 ? "s" : ""} à réaliser`;
+  } else if (hasPlans) {
+    btnLabel = `📋 Préventif planifié`;
+  }
+
   const controlBtn = createElementStateToggleButton({
     target: stateItem,
     prop: "controlePreventif",
-    label: "Contrôle préventif",
-    title: `${title} en contrôle préventif`,
-    activeClass: "preventif"
+    label: btnLabel,
+    title: nbPlansEchus > 0
+      ? `${nbPlansEchus} préventif(s) à réaliser`
+      : `${title} en contrôle préventif`,
+    activeClass: nbPlansEchus > 0 ? "warning" : "preventif"
   });
+
+  // Si plans échus → activer visuellement le bouton automatiquement
+  if (nbPlansEchus > 0) {
+    controlBtn.classList.add("active");
+  }
+
+  // Clic → scroll vers le bloc plans
+  if (hasPlans) {
+    const originalOnClick = controlBtn.onclick;
+    controlBtn.onclick = (e) => {
+      // Scroll vers le bloc préventifs
+      setTimeout(() => {
+        const planBlock = document.querySelector(".planif-block-equipement");
+        if (planBlock) {
+          planBlock.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 100);
+      if (originalOnClick) originalOnClick.call(controlBtn, e);
+    };
+  }
 
   return createElementStateToolbar("", [controlBtn]);
 }
@@ -419,7 +465,8 @@ function renderGroupeMoteurDetailView(groupNumber) {
     createStandardHeaderControl(
       `Groupe moteur ${groupeLabel}`,
       COMMENTS_GROUPE_MOTEUR,
-      key
+      key,
+      { type: "groupeMoteur", id: groupNumber }
     )
   );
 
@@ -2158,7 +2205,8 @@ function renderSortieView(sortieNumber) {
     createStandardHeaderControl(
       `Sortie ${sortieNumber}`,
       COMMENTS_SORTIES,
-      key
+      key,
+      { type: "sortie", id: sortieNumber }
     )
   );
 

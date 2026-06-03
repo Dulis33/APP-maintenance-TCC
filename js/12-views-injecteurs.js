@@ -55,7 +55,8 @@ function createInjecteurHeaderControl(injecteurNumber) {
   return createStandardHeaderControl(
     `Injecteur ${injecteurNumber}`,
     COMMENTS_INJECTEURS,
-    key
+    key,
+    { type: "injecteur", id: injecteurNumber }
   );
 }
 
@@ -72,7 +73,8 @@ function createInjecteurConvoyeurHeaderControl(
   return createStandardHeaderControl(
     `${label} - Injecteur ${injecteurNumber}`,
     COMMENTS_INJECTEURS,
-    key
+    key,
+    { type: "injecteur", id: injecteurNumber, convoyeurKey: convoyeurKey }
   );
 }
 

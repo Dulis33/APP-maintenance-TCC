@@ -578,20 +578,20 @@ function getChariotButtonClasses(chariotNumber) {
 
 function getChariotPiecesButtonClasses(chariotNumber) {
   return getButtonStateClassFromCounters(
-    countChariotDirectCounters(chariotNumber)
+    countChariotDirectCountersWithPlans(chariotNumber)
   );
 }
 
 function getGroupeMoteurButtonClasses(groupNumber) {
-  return getButtonStateClassFromCounters(countGroupeMoteurCounters(groupNumber));
+  return getButtonStateClassFromCounters(countGroupeMoteurCountersWithPlans(groupNumber));
 }
 
 function getSortieButtonClasses(sortieNumber) {
-  return getButtonStateClassFromCounters(countSortieCounters(sortieNumber));
+  return getButtonStateClassFromCounters(countSortieCountersWithPlans(sortieNumber));
 }
 
 function getInjecteurButtonClasses(injecteurNumber) {
-  return getButtonStateClassFromCounters(countInjecteurTotalCounters(injecteurNumber));
+  return getButtonStateClassFromCounters(countInjecteurTotalCountersWithPlans(injecteurNumber));
 }
 
 function getInjecteurConvoyeurButtonClasses(injecteurNumber, convoyeurKey) {
@@ -649,4 +649,66 @@ function countPlansEchusByType(type) {
     if (!isPlanEchu(p)) return false;
     return p.equipements && p.equipements.some((eq) => eq.type === type);
   }).length;
+}
+
+// Ajoute le controlePreventif des plans échus pour un équipement donné
+function addPlanEchuToCounters(counters, type, id, convoyeurKey, tableauType) {
+  if (
+    typeof DATA_PLANS_PREVENTIFS === "undefined" ||
+    typeof isPlanEchu !== "function" ||
+    typeof getPlansForEquipement !== "function"
+  ) return counters;
+
+  const plans = getPlansForEquipement(type, id, convoyeurKey, tableauType);
+  const nbEchus = plans.filter((p) => isPlanEchu(p)).length;
+  if (nbEchus === 0) return counters;
+
+  return addCounters(counters, normalizeCountersObject({ controlePreventif: nbEchus }));
+}
+
+// Versions enrichies des compteurs par équipement (incluent les plans échus)
+function countChariotDirectCountersWithPlans(chariotNumber) {
+  return addPlanEchuToCounters(
+    countChariotDirectCounters(chariotNumber),
+    "chariot", chariotNumber
+  );
+}
+
+function countGroupeMoteurCountersWithPlans(groupNumber) {
+  return addPlanEchuToCounters(
+    countGroupeMoteurCounters(groupNumber),
+    "groupeMoteur", groupNumber
+  );
+}
+
+function countSortieCountersWithPlans(sortieNumber) {
+  return addPlanEchuToCounters(
+    countSortieCounters(sortieNumber),
+    "sortie", sortieNumber
+  );
+}
+
+function countInjecteurTotalCountersWithPlans(injecteurNumber) {
+  let base = countInjecteurTotalCounters(injecteurNumber);
+  // Agrège les plans échus de tous les convoyeurs de cet injecteur
+  if (
+    typeof DATA_PLANS_PREVENTIFS !== "undefined" &&
+    typeof isPlanEchu === "function" &&
+    typeof getPlansForEquipement === "function"
+  ) {
+    const plans = DATA_PLANS_PREVENTIFS.filter((p) => {
+      if (!isPlanEchu(p)) return false;
+      return p.equipements && p.equipements.some((eq) =>
+        eq.type === "injecteur" && (
+          typeof eq.injecteurId === "string"
+            ? parseInt(eq.injecteurId, 10)
+            : eq.injecteurId
+        ) === injecteurNumber
+      );
+    });
+    if (plans.length > 0) {
+      base = addCounters(base, normalizeCountersObject({ controlePreventif: plans.length }));
+    }
+  }
+  return base;
 }
