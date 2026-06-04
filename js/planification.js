@@ -111,6 +111,39 @@ function openPlanificationPopup(preselect = {}) {
   recSection.appendChild(recGrid);
   box.appendChild(recSection);
 
+  /* ---- Formulaire associé ---- */
+  const formSection = document.createElement("div");
+  formSection.className = "planif-section";
+  const formLabel = document.createElement("div");
+  formLabel.className = "planif-section-label";
+  formLabel.textContent = "Formulaire de contrôle associé (optionnel)";
+
+  const formSelect = document.createElement("select");
+  formSelect.className = "model-input";
+
+  const emptyOpt = document.createElement("option");
+  emptyOpt.value = "";
+  emptyOpt.textContent = "— Aucun formulaire —";
+  formSelect.appendChild(emptyOpt);
+
+  if (typeof initDefaultFormulaires === "function") initDefaultFormulaires();
+  if (typeof DATA_MODELES_FORMULAIRES !== "undefined") {
+    DATA_MODELES_FORMULAIRES.forEach((f) => {
+      const opt = document.createElement("option");
+      opt.value = f.id;
+      opt.textContent = f.nom + " (" + (f.typeEquipement === "injecteur" ? "Injecteurs"
+        : f.typeEquipement === "chariot" ? "Chariots"
+        : f.typeEquipement === "groupeMoteur" ? "Groupes moteurs"
+        : "Sorties") + ")";
+      opt.selected = preselect.formulaireId === f.id;
+      formSelect.appendChild(opt);
+    });
+  }
+
+  formSection.appendChild(formLabel);
+  formSection.appendChild(formSelect);
+  box.appendChild(formSection);
+
   /* ---- Sélection équipements ---- */
   const equipSection = document.createElement("div");
   equipSection.className = "planif-section";
@@ -437,7 +470,8 @@ function openPlanificationPopup(preselect = {}) {
       prochaineEcheance: date,
       equipements,
       statut: "actif",
-      historiqueRealisations: []
+      historiqueRealisations: [],
+      formulaireId: formSelect.value || null
     });
 
     DATA_PLANS_PREVENTIFS.push(plan);
@@ -576,6 +610,47 @@ function createPlansPreventifBlock(type, id, convoyeurKey, tableauType) {
     }
 
     block.appendChild(card);
+  });
+
+  return block;
+}
+
+/* ====================================================
+   INTÉGRATION FORMULAIRE DANS LE BLOC ÉQUIPEMENT
+   Appelé depuis createPlansPreventifBlock
+==================================================== */
+
+// Override de createPlansPreventifBlock pour inclure les formulaires
+const _origCreatePlansPreventifBlock = createPlansPreventifBlock;
+function createPlansPreventifBlock(type, id, convoyeurKey, tableauType) {
+  const block = _origCreatePlansPreventifBlock(type, id, convoyeurKey, tableauType);
+  if (!block) return null;
+
+  // Chercher les plans avec formulaire pour cet équipement
+  const plansAvecFormulaire = (DATA_PLANS_PREVENTIFS || []).filter((plan) => {
+    if (!plan || plan.statut !== "actif" || !plan.formulaireId) return false;
+    if (typeof isPlanEchu !== "function" || !isPlanEchu(plan)) return false;
+    return plan.equipements && plan.equipements.some((eq) => {
+      if (eq.type !== type) return false;
+      if (type === "injecteur") {
+        const eqId = typeof eq.injecteurId === "string" ? parseInt(eq.injecteurId) : eq.injecteurId;
+        return eqId === id && (!convoyeurKey || eq.convoyeurKey === convoyeurKey);
+      }
+      return Array.isArray(eq.ids) && eq.ids.some((i) => {
+        return (typeof i === "string" ? parseInt(i) : i) === id;
+      });
+    });
+  });
+
+  // Construire le label équipement
+  const types = { chariot: "Chariot", groupeMoteur: "Groupe moteur", injecteur: "Injecteur", sortie: "Sortie" };
+  const equipLabel = (types[type] || type) + " " + id;
+
+  plansAvecFormulaire.forEach((plan) => {
+    const formBlock = typeof createFormulaireBlock === "function"
+      ? createFormulaireBlock(plan, equipLabel)
+      : null;
+    if (formBlock) block.appendChild(formBlock);
   });
 
   return block;

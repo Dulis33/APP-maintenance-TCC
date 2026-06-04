@@ -444,6 +444,7 @@ function renderAdminView() {
   );
   appView.appendChild(createAdminNavButton("Modèle Sorties", "editModeleSortie"));
   appView.appendChild(createAdminNavButton("Modèle Injecteurs", "adminInjecteurs"));
+  appView.appendChild(createAdminNavButton("Formulaires preventifs", "adminFormulaires"));
 
   const schemaCard = document.createElement("div");
   schemaCard.className = "model-card";
@@ -587,4 +588,290 @@ function renderEditModeleSortieView() {
       setState("admin");
     })
   );
+}
+
+/* ====================================================
+   EDITEUR DE MODELES DE FORMULAIRES PREVENTIFS
+==================================================== */
+
+function renderAdminFormulairesView() {
+  clearView();
+  appView.appendChild(createBackButton());
+  if (typeof initDefaultFormulaires === "function") initDefaultFormulaires();
+
+  const card = document.createElement("div");
+  card.className = "model-card";
+
+  const h2 = document.createElement("h2");
+  h2.textContent = "Formulaires preventifs";
+  card.appendChild(h2);
+
+  const p = document.createElement("p");
+  p.textContent = "Cree et modifie les modeles de formulaires utilises lors de la planification.";
+  card.appendChild(p);
+
+  const btnCreate = document.createElement("button");
+  btnCreate.type = "button";
+  btnCreate.className = "model-add-button";
+  btnCreate.textContent = "+ Creer un nouveau formulaire";
+  btnCreate.onclick = () => {
+    const newForm = typeof normalizeModeleFormulaire === "function"
+      ? normalizeModeleFormulaire({ nom: "Nouveau formulaire", typeEquipement: "injecteur", sections: [] })
+      : { id: "f" + Date.now(), nom: "Nouveau formulaire", typeEquipement: "injecteur", sections: [] };
+    DATA_MODELES_FORMULAIRES.push(newForm);
+    saveAll();
+    setState("adminFormulaireDetail", { formulaireId: newForm.id });
+  };
+  card.appendChild(btnCreate);
+
+  if (!DATA_MODELES_FORMULAIRES || DATA_MODELES_FORMULAIRES.length === 0) {
+    const empty = document.createElement("p");
+    empty.style.color = "var(--text-muted)";
+    empty.style.marginTop = "12px";
+    empty.textContent = "Aucun formulaire.";
+    card.appendChild(empty);
+  } else {
+    const list = document.createElement("div");
+    list.style.cssText = "display:flex;flex-direction:column;gap:8px;margin-top:12px;";
+    DATA_MODELES_FORMULAIRES.forEach((form) => {
+      const row = document.createElement("div");
+      row.style.cssText = "display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface-soft);border:1px solid var(--border);border-radius:10px;";
+      const info = document.createElement("div");
+      info.style.flex = "1";
+      const nom = document.createElement("div");
+      nom.style.cssText = "font-weight:700;color:var(--text);";
+      nom.textContent = form.nom;
+      const types = { chariot: "Chariots", groupeMoteur: "Groupes moteurs", injecteur: "Injecteurs", sortie: "Sorties" };
+      const meta = document.createElement("div");
+      meta.style.cssText = "font-size:11px;color:var(--text-muted);";
+      meta.textContent = (types[form.typeEquipement] || form.typeEquipement) + " - " + (form.sections || []).length + " section(s)";
+      info.appendChild(nom);
+      info.appendChild(meta);
+      const btnEdit = document.createElement("button");
+      btnEdit.type = "button";
+      btnEdit.className = "model-save-button";
+      btnEdit.style.cssText = "width:auto;min-height:34px;padding:0 12px;font-size:12px;";
+      btnEdit.textContent = "Modifier";
+      btnEdit.onclick = () => setState("adminFormulaireDetail", { formulaireId: form.id });
+      const btnDel = document.createElement("button");
+      btnDel.type = "button";
+      btnDel.className = "model-delete-button";
+      btnDel.textContent = "X";
+      btnDel.onclick = () => {
+        if (!confirm("Supprimer ce formulaire ?")) return;
+        const idx = DATA_MODELES_FORMULAIRES.indexOf(form);
+        if (idx !== -1) DATA_MODELES_FORMULAIRES.splice(idx, 1);
+        saveAll();
+        renderCurrentState();
+      };
+      row.appendChild(info);
+      row.appendChild(btnEdit);
+      row.appendChild(btnDel);
+      list.appendChild(row);
+    });
+    card.appendChild(list);
+  }
+  appView.appendChild(card);
+}
+
+function renderAdminFormulaireDetailView(formulaireId) {
+  clearView();
+  appView.appendChild(createBackButton());
+  if (typeof initDefaultFormulaires === "function") initDefaultFormulaires();
+  const form = typeof getModeleFormulaire === "function" ? getModeleFormulaire(formulaireId) : null;
+  if (!form) { setState("adminFormulaires"); return; }
+
+  const card = document.createElement("div");
+  card.className = "model-card";
+
+  const nomLabel = document.createElement("div");
+  nomLabel.className = "manual-field-label";
+  nomLabel.textContent = "Nom du formulaire";
+  card.appendChild(nomLabel);
+  const nomInput = document.createElement("input");
+  nomInput.type = "text";
+  nomInput.className = "model-input";
+  nomInput.value = form.nom;
+  nomInput.oninput = () => { form.nom = nomInput.value; };
+  card.appendChild(nomInput);
+
+  const typeLabel = document.createElement("div");
+  typeLabel.className = "manual-field-label";
+  typeLabel.style.marginTop = "10px";
+  typeLabel.textContent = "Type equipement";
+  card.appendChild(typeLabel);
+  const typeSelect = document.createElement("select");
+  typeSelect.className = "model-input";
+  [["injecteur","Injecteurs"],["chariot","Chariots"],["groupeMoteur","Groupes moteurs"],["sortie","Sorties"]].forEach(([val,lbl]) => {
+    const opt = document.createElement("option");
+    opt.value = val; opt.textContent = lbl; opt.selected = form.typeEquipement === val;
+    typeSelect.appendChild(opt);
+  });
+  typeSelect.onchange = () => { form.typeEquipement = typeSelect.value; };
+  card.appendChild(typeSelect);
+
+  const secTitle = document.createElement("h2");
+  secTitle.textContent = "Sections";
+  secTitle.style.marginTop = "16px";
+  card.appendChild(secTitle);
+
+  const sectionsWrap = document.createElement("div");
+  sectionsWrap.style.cssText = "display:flex;flex-direction:column;gap:8px;";
+
+  function renderSections() {
+    sectionsWrap.innerHTML = "";
+    (form.sections || []).forEach((sec, idx) => {
+      sectionsWrap.appendChild(buildSectionEditor(form, sec, idx, renderSections));
+    });
+  }
+  renderSections();
+  card.appendChild(sectionsWrap);
+
+  const btnAddSec = document.createElement("button");
+  btnAddSec.type = "button";
+  btnAddSec.className = "model-add-button";
+  btnAddSec.style.marginTop = "8px";
+  btnAddSec.textContent = "+ Ajouter une section";
+  btnAddSec.onclick = () => {
+    if (!form.sections) form.sections = [];
+    form.sections.push(typeof normalizeFormulaireSection === "function"
+      ? normalizeFormulaireSection({ titre: "Nouvelle section", type: "ok_nok", anomalie: "aucune" })
+      : { id: "s"+Date.now(), titre: "Nouvelle section", type: "ok_nok", anomalie: "aucune", items: [], precisions: [] });
+    renderSections();
+  };
+  card.appendChild(btnAddSec);
+
+  const btnSave = document.createElement("button");
+  btnSave.type = "button";
+  btnSave.className = "model-save-button";
+  btnSave.style.marginTop = "14px";
+  btnSave.textContent = "Sauvegarder ce formulaire";
+  btnSave.onclick = () => { saveAll(); btnSave.textContent = "Sauvegarde OK"; setTimeout(() => { btnSave.textContent = "Sauvegarder ce formulaire"; }, 1500); };
+  card.appendChild(btnSave);
+  appView.appendChild(card);
+}
+
+function buildSectionEditor(form, sec, idx, onUpdate) {
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "padding:10px 12px;background:var(--surface-soft);border:1px solid var(--border);border-radius:10px;display:flex;flex-direction:column;gap:7px;";
+
+  const delRow = document.createElement("div");
+  delRow.style.cssText = "display:flex;justify-content:space-between;align-items:center;";
+  const secNum = document.createElement("span");
+  secNum.style.cssText = "font-size:10px;color:var(--text-muted);";
+  secNum.textContent = "Section " + (idx + 1);
+  const btnDel = document.createElement("button");
+  btnDel.type = "button";
+  btnDel.className = "model-delete-button";
+  btnDel.textContent = "Supprimer";
+  btnDel.onclick = () => { form.sections.splice(idx, 1); onUpdate(); };
+  delRow.appendChild(secNum);
+  delRow.appendChild(btnDel);
+  wrap.appendChild(delRow);
+
+  const titreInput = document.createElement("input");
+  titreInput.type = "text";
+  titreInput.className = "model-input";
+  titreInput.placeholder = "Titre de la section";
+  titreInput.value = sec.titre || "";
+  titreInput.oninput = () => { sec.titre = titreInput.value; };
+  wrap.appendChild(titreInput);
+
+  const typeRow = document.createElement("div");
+  typeRow.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;";
+  const typeSelect = document.createElement("select");
+  typeSelect.className = "model-input";
+  typeSelect.style.flex = "1";
+  [["ok_nok","OK / NOK"],["ok_nok_urgent","OK / NOK + Urgent"],["ok_nok_multiple","OK / NOK par item"],["ok_nok_urgent_precision","OK / NOK + Urgent + Precisions"],["texte_libre","Texte libre"],["checkbox_liste","Liste de cases"],["numerique","Valeur numerique"]].forEach(([val,lbl]) => {
+    const opt = document.createElement("option");
+    opt.value = val; opt.textContent = lbl; opt.selected = sec.type === val;
+    typeSelect.appendChild(opt);
+  });
+  typeSelect.onchange = () => { sec.type = typeSelect.value; onUpdate(); };
+  const anomSelect = document.createElement("select");
+  anomSelect.className = "model-input";
+  anomSelect.style.flex = "1";
+  [["aucune","Pas anomalie"],["aPrevoir","-> A prevoir"],["critique","-> Critique"]].forEach(([val,lbl]) => {
+    const opt = document.createElement("option");
+    opt.value = val; opt.textContent = lbl; opt.selected = sec.anomalie === val;
+    anomSelect.appendChild(opt);
+  });
+  anomSelect.onchange = () => { sec.anomalie = anomSelect.value; };
+  typeRow.appendChild(typeSelect);
+  typeRow.appendChild(anomSelect);
+  wrap.appendChild(typeRow);
+
+  // Items
+  if (sec.type === "ok_nok_multiple" || sec.type === "checkbox_liste") {
+    const iWrap = document.createElement("div");
+    iWrap.style.cssText = "display:flex;flex-direction:column;gap:5px;";
+    const iLbl = document.createElement("div");
+    iLbl.style.cssText = "font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;";
+    iLbl.textContent = "Items :";
+    iWrap.appendChild(iLbl);
+    (sec.items || []).forEach((item, iIdx) => {
+      const iRow = document.createElement("div");
+      iRow.style.cssText = "display:flex;gap:6px;";
+      const iInput = document.createElement("input");
+      iInput.type = "text";
+      iInput.className = "model-input";
+      iInput.value = item;
+      iInput.oninput = () => { sec.items[iIdx] = iInput.value; };
+      const iDel = document.createElement("button");
+      iDel.type = "button";
+      iDel.className = "model-delete-button";
+      iDel.textContent = "X";
+      iDel.style.cssText = "min-height:30px;padding:0 8px;font-size:11px;";
+      iDel.onclick = () => { sec.items.splice(iIdx, 1); onUpdate(); };
+      iRow.appendChild(iInput);
+      iRow.appendChild(iDel);
+      iWrap.appendChild(iRow);
+    });
+    const btnAddI = document.createElement("button");
+    btnAddI.type = "button";
+    btnAddI.className = "model-add-button";
+    btnAddI.style.cssText = "padding:5px 10px;font-size:11px;";
+    btnAddI.textContent = "+ Item";
+    btnAddI.onclick = () => { if (!sec.items) sec.items = []; sec.items.push("Nouvel item"); onUpdate(); };
+    iWrap.appendChild(btnAddI);
+    wrap.appendChild(iWrap);
+  }
+
+  // Precisions
+  if (sec.type === "ok_nok_urgent_precision") {
+    const pWrap = document.createElement("div");
+    pWrap.style.cssText = "display:flex;flex-direction:column;gap:5px;";
+    const pLbl = document.createElement("div");
+    pLbl.style.cssText = "font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;";
+    pLbl.textContent = "Precisions :";
+    pWrap.appendChild(pLbl);
+    (sec.precisions || []).forEach((prec, pIdx) => {
+      const pRow = document.createElement("div");
+      pRow.style.cssText = "display:flex;gap:6px;";
+      const pInput = document.createElement("input");
+      pInput.type = "text";
+      pInput.className = "model-input";
+      pInput.value = prec;
+      pInput.oninput = () => { sec.precisions[pIdx] = pInput.value; };
+      const pDel = document.createElement("button");
+      pDel.type = "button";
+      pDel.className = "model-delete-button";
+      pDel.textContent = "X";
+      pDel.style.cssText = "min-height:30px;padding:0 8px;font-size:11px;";
+      pDel.onclick = () => { sec.precisions.splice(pIdx, 1); onUpdate(); };
+      pRow.appendChild(pInput);
+      pRow.appendChild(pDel);
+      pWrap.appendChild(pRow);
+    });
+    const btnAddP = document.createElement("button");
+    btnAddP.type = "button";
+    btnAddP.className = "model-add-button";
+    btnAddP.style.cssText = "padding:5px 10px;font-size:11px;";
+    btnAddP.textContent = "+ Precision";
+    btnAddP.onclick = () => { if (!sec.precisions) sec.precisions = []; sec.precisions.push("Nouvelle precision"); onUpdate(); };
+    pWrap.appendChild(btnAddP);
+    wrap.appendChild(pWrap);
+  }
+
+  return wrap;
 }

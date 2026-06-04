@@ -532,6 +532,10 @@ function buildPayload() {
 
     plansPreventifs: DATA_PLANS_PREVENTIFS.map((p) =>
       typeof normalizePlanPreventif === "function" ? normalizePlanPreventif(p) : p
+    ),
+
+    modelesFormulaires: DATA_MODELES_FORMULAIRES.map((f) =>
+      typeof normalizeModeleFormulaire === "function" ? normalizeModeleFormulaire(f) : f
     )
   };
 }
@@ -683,6 +687,18 @@ function applyLoadedData(data) {
       );
     });
   }
+
+  // Modèles de formulaires
+  DATA_MODELES_FORMULAIRES.length = 0;
+  if (Array.isArray(data.modelesFormulaires) && data.modelesFormulaires.length > 0) {
+    data.modelesFormulaires.forEach((f) => {
+      DATA_MODELES_FORMULAIRES.push(
+        typeof normalizeModeleFormulaire === "function" ? normalizeModeleFormulaire(f) : f
+      );
+    });
+  }
+  // Initialiser les modèles par défaut si aucun n'est chargé
+  if (typeof initDefaultFormulaires === "function") initDefaultFormulaires();
 
   MANUAL_INTERVENTION_ROWS = Array.isArray(data.manualInterventionRows)
     ? data.manualInterventionRows

@@ -71,6 +71,149 @@ const GLOBAL_PROBLEMS_ARCHIVE = [];
 // Plans préventifs programmés
 const DATA_PLANS_PREVENTIFS = [];
 
+// Modèles de formulaires préventifs
+const DATA_MODELES_FORMULAIRES = [];
+
+/* ---- Modèles de sections disponibles ----
+  ok_nok              : □ OK  □ NOK
+  ok_nok_urgent       : □ OK  □ NOK → Urgent ? □ Oui □ Non
+  ok_nok_multiple     : liste d'items avec chacun □ OK □ NOK
+  ok_nok_urgent_precision : □ OK □ NOK + urgent + cases précisions
+  texte_libre         : ligne(s) texte libre
+  checkbox_liste      : liste de cases à cocher
+  numerique           : valeur numérique à renseigner
+*/
+
+function generateFormulaireId() {
+  return "form_" + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+}
+
+function normalizeFormulaireSection(sec = {}) {
+  const s = sec && typeof sec === "object" ? sec : {};
+  return {
+    id:        s.id        || generateFormulaireId(),
+    titre:     s.titre     || "",
+    type:      s.type      || "ok_nok",
+    items:     Array.isArray(s.items)      ? [...s.items]      : [],
+    precisions: Array.isArray(s.precisions) ? [...s.precisions] : [],
+    anomalie:  s.anomalie  || "aucune",  // critique | aPrevoir | aucune
+    lignes:    typeof s.lignes === "number" ? s.lignes : 2  // pour texte_libre
+  };
+}
+
+function normalizeModeleFormulaire(f = {}) {
+  const safe = f && typeof f === "object" ? f : {};
+  return {
+    id:            safe.id            || generateFormulaireId(),
+    nom:           safe.nom           || "Formulaire sans nom",
+    typeEquipement: safe.typeEquipement || "injecteur",
+    sections:      Array.isArray(safe.sections)
+      ? safe.sections.map(normalizeFormulaireSection)
+      : []
+  };
+}
+
+function getModeleFormulaire(id) {
+  return DATA_MODELES_FORMULAIRES.find((f) => f.id === id) || null;
+}
+
+function getModelesForEquipement(typeEquipement) {
+  return DATA_MODELES_FORMULAIRES.filter(
+    (f) => !typeEquipement || f.typeEquipement === typeEquipement
+  );
+}
+
+/* ---- Modèles pré-créés ---- */
+function initDefaultFormulaires() {
+  if (DATA_MODELES_FORMULAIRES.length > 0) return;
+
+  const defaults = [
+    {
+      id: "form_default_ronde_injecteur",
+      nom: "Ronde sensorielle",
+      typeEquipement: "injecteur",
+      sections: [
+        { id: "s1", titre: "État des bandes", type: "ok_nok_urgent", anomalie: "critique" },
+        { id: "s2", titre: "Protection anti-pince doigt", type: "ok_nok_multiple",
+          items: ["Position 1", "Position 2", "Position 3"], anomalie: "critique" },
+        { id: "s3", titre: "Propreté générale", type: "ok_nok", anomalie: "aPrevoir" },
+        { id: "s4", titre: "Vibrations / bruits anormaux", type: "ok_nok_urgent_precision",
+          precisions: ["Rouleau moteur", "Rouleau tendeur", "Palier", "Autre"],
+          anomalie: "critique" },
+        { id: "s5", titre: "Commentaires généraux", type: "texte_libre", lignes: 3 }
+      ]
+    },
+    {
+      id: "form_default_ronde_chariot",
+      nom: "Ronde sensorielle",
+      typeEquipement: "chariot",
+      sections: [
+        { id: "s1", titre: "État général du chariot", type: "ok_nok_urgent", anomalie: "critique" },
+        { id: "s2", titre: "Fixation et assemblage", type: "ok_nok", anomalie: "critique" },
+        { id: "s3", titre: "Guidage et roulement", type: "ok_nok_urgent_precision",
+          precisions: ["Galets", "Rails", "Roulement", "Autre"], anomalie: "critique" },
+        { id: "s4", titre: "Propreté générale", type: "ok_nok", anomalie: "aPrevoir" },
+        { id: "s5", titre: "Commentaires", type: "texte_libre", lignes: 2 }
+      ]
+    },
+    {
+      id: "form_default_ronde_groupeMoteur",
+      nom: "Ronde sensorielle",
+      typeEquipement: "groupeMoteur",
+      sections: [
+        { id: "s1", titre: "État moteur", type: "ok_nok_urgent", anomalie: "critique" },
+        { id: "s2", titre: "Courroies / transmission", type: "ok_nok_urgent",
+          anomalie: "critique" },
+        { id: "s3", titre: "Vibrations / bruits", type: "ok_nok_urgent_precision",
+          precisions: ["Moteur", "Réducteur", "Courroie", "Palier", "Autre"],
+          anomalie: "critique" },
+        { id: "s4", titre: "Température anormale", type: "ok_nok", anomalie: "critique" },
+        { id: "s5", titre: "Propreté générale", type: "ok_nok", anomalie: "aPrevoir" },
+        { id: "s6", titre: "Commentaires", type: "texte_libre", lignes: 2 }
+      ]
+    },
+    {
+      id: "form_default_ronde_sortie",
+      nom: "Ronde sensorielle",
+      typeEquipement: "sortie",
+      sections: [
+        { id: "s1", titre: "État général", type: "ok_nok_urgent", anomalie: "critique" },
+        { id: "s2", titre: "Capteurs / détecteurs", type: "ok_nok_multiple",
+          items: ["Capteur entrée", "Capteur sortie"], anomalie: "critique" },
+        { id: "s3", titre: "Propreté générale", type: "ok_nok", anomalie: "aPrevoir" },
+        { id: "s4", titre: "Commentaires", type: "texte_libre", lignes: 2 }
+      ]
+    },
+    {
+      id: "form_default_controle_visuel",
+      nom: "Contrôle visuel",
+      typeEquipement: "injecteur",
+      sections: [
+        { id: "s1", titre: "Aspect général", type: "ok_nok_urgent", anomalie: "critique" },
+        { id: "s2", titre: "Présence de corps étrangers", type: "ok_nok", anomalie: "critique" },
+        { id: "s3", titre: "État des protections", type: "ok_nok", anomalie: "critique" },
+        { id: "s4", titre: "Signalisation et étiquetage", type: "ok_nok", anomalie: "aPrevoir" },
+        { id: "s5", titre: "Observations", type: "texte_libre", lignes: 3 }
+      ]
+    },
+    {
+      id: "form_default_nettoyage",
+      nom: "Nettoyage",
+      typeEquipement: "injecteur",
+      sections: [
+        { id: "s1", titre: "Nettoyage bandes", type: "ok_nok", anomalie: "aPrevoir" },
+        { id: "s2", titre: "Nettoyage châssis", type: "ok_nok", anomalie: "aPrevoir" },
+        { id: "s3", titre: "Évacuation déchets", type: "ok_nok", anomalie: "aPrevoir" },
+        { id: "s4", titre: "Anomalie découverte pendant nettoyage",
+          type: "ok_nok_urgent", anomalie: "critique" },
+        { id: "s5", titre: "Observations", type: "texte_libre", lignes: 2 }
+      ]
+    }
+  ];
+
+  defaults.forEach((d) => DATA_MODELES_FORMULAIRES.push(normalizeModeleFormulaire(d)));
+}
+
 let MANUAL_INTERVENTION_ROWS = [];
 let INTERVENTION_COMMENT_OVERRIDES = {};
 

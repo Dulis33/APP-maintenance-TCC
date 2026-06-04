@@ -223,6 +223,14 @@ case "chariotPieces":
       if (typeof renderCalendrierPreventifs === "function") renderCalendrierPreventifs();
       break;
 
+    case "adminFormulaires":
+      if (typeof renderAdminFormulairesView === "function") renderAdminFormulairesView();
+      break;
+
+    case "adminFormulaireDetail":
+      if (typeof renderAdminFormulaireDetailView === "function") renderAdminFormulaireDetailView(stateData.formulaireId);
+      break;
+
     case "admin":
       renderAdminView();
       break;
