@@ -3,7 +3,7 @@
   "name": "Suivi TCC et Transitique",
   "short_name": "Suivi TCC",
   "description": "Application de suivi TCC et Transitique.",
-  "start_url": "./index.htm",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f3f6fb",
@@ -89,5 +89,8 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
 }
