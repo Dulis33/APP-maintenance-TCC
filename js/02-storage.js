@@ -734,6 +734,16 @@ function applyLoadedData(data) {
     : {};
 
   syncAllDataWithModels(false);
+
+  // Nettoyage des anciens drapeaux cachés de commentaires standards.
+  // Les préventifs visibles doivent maintenant venir soit des cases de pièces,
+  // soit des plans préventifs réellement échus, pas d'une ancienne ligne d'état invisible.
+  if (typeof cleanLegacyNonCelluleCommentStates === "function") {
+    cleanLegacyNonCelluleCommentStates(COMMENTS_CHARIOTS);
+    cleanLegacyNonCelluleCommentStates(COMMENTS_GROUPE_MOTEUR);
+    cleanLegacyNonCelluleCommentStates(COMMENTS_INJECTEURS);
+    cleanLegacyNonCelluleCommentStates(COMMENTS_SORTIES);
+  }
 }
 
 function saveAll() {

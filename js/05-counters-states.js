@@ -113,19 +113,31 @@ function countCommentEntries(store, key, options = {}) {
     ? rows.slice(1).filter((item) => !isSystemFollowUpCommentRow(item))
     : [];
 
+  // Les lignes d'en-tête des commentaires servaient avant à porter des états
+  // globaux cachés. Depuis l'arrivée des préventifs planifiés, ces anciens
+  // drapeaux ne doivent plus alimenter les pastilles des équipements standards
+  // (chariots, groupes moteurs, sorties, injecteurs), sinon une pastille peut
+  // rester visible alors qu'aucune case n'est cochée dans le tableau.
+  // Pour les cellules, on garde la compatibilité via includeCelluleStates.
+  const rowsWithVisibleContent = visibleRows.filter((item) => hasAnyCommentText(item));
+  const rowsForHiddenFlags = includeCelluleStates ? visibleRows : rowsWithVisibleContent;
+  const allowHeaderStateFlags = includeCelluleStates === true;
+
   const hasCritical =
-    !!headerRow?.critique || visibleRows.some((item) => item?.critique === true);
+    (allowHeaderStateFlags && !!headerRow?.critique) ||
+    rowsForHiddenFlags.some((item) => item?.critique === true);
 
   const hasWarning =
-    !!headerRow?.aPrevoir || visibleRows.some((item) => item?.aPrevoir === true);
+    (allowHeaderStateFlags && !!headerRow?.aPrevoir) ||
+    rowsForHiddenFlags.some((item) => item?.aPrevoir === true);
 
   const hasControl = includeCelluleStates
     ? !!headerRow?.aControler || visibleRows.some((item) => item?.aControler === true)
     : false;
 
-  const hasPreventif =
-    !!headerRow?.controlePreventif ||
-    visibleRows.some((item) => item?.controlePreventif === true);
+  const hasPreventif = includeCelluleStates
+    ? !!headerRow?.controlePreventif || visibleRows.some((item) => item?.controlePreventif === true)
+    : rowsForHiddenFlags.some((item) => item?.controlePreventif === true);
 
   const hasComments = false;
 

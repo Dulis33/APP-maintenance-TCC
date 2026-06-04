@@ -592,6 +592,57 @@ function mutateCommentItem(target, source = {}) {
   return target;
 }
 
+function hasVisibleCommentPayload(item) {
+  if (!item || typeof item !== "object") return false;
+  return (
+    (typeof item.text === "string" && item.text.trim() !== "") ||
+    (typeof item.elementConcerne === "string" && item.elementConcerne.trim() !== "") ||
+    (typeof item.date === "string" && item.date.trim() !== "") ||
+    (typeof item.constat === "string" && item.constat.trim() !== "") ||
+    (typeof item.action === "string" && item.action.trim() !== "") ||
+    (typeof item.observation === "string" && item.observation.trim() !== "")
+  );
+}
+
+function clearLegacyCommentStateFlags(item) {
+  if (!item || typeof item !== "object") return false;
+  const hadState =
+    item.critique === true ||
+    item.aPrevoir === true ||
+    item.aControler === true ||
+    item.controlePreventif === true ||
+    item.celluleDefaut === true ||
+    item.celluleInhibee === true;
+
+  item.critique = false;
+  item.aPrevoir = false;
+  item.aControler = false;
+  item.controlePreventif = false;
+  item.celluleDefaut = false;
+  item.celluleInhibee = false;
+  return hadState;
+}
+
+function cleanLegacyNonCelluleCommentStates(store) {
+  if (!store || typeof store !== "object") return false;
+  let changed = false;
+
+  Object.keys(store).forEach((key) => {
+    const rows = store[key];
+    if (!Array.isArray(rows)) return;
+
+    rows.forEach((item, index) => {
+      // Index 0 = ancienne ligne d'état cachée.
+      // Les autres lignes vides avec drapeaux sont des restes d'anciennes versions.
+      if (index === 0 || !hasVisibleCommentPayload(item)) {
+        if (clearLegacyCommentStateFlags(item)) changed = true;
+      }
+    });
+  });
+
+  return changed;
+}
+
 function ensureLocalRows(store, key, model) {
   if (!Array.isArray(store[key])) {
     store[key] = [];

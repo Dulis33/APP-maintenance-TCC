@@ -794,15 +794,18 @@ function collectInterventionRows(
       }
     });
 
-    COMMENTS_CHARIOTS[chariotKey].forEach((commentItem) => {
+    COMMENTS_CHARIOTS[chariotKey].forEach((commentItem, commentIndex) => {
       const hasTextContent =
         (commentItem?.text || "").trim() !== "" ||
         (commentItem?.elementConcerne || "").trim() !== "" ||
         (commentItem?.date || "").trim() !== "";
+      const canUseCommentFlags = commentIndex > 0 && hasTextContent;
 
-      applyCommentStateFlagsToAggregate(chariotAggregate, commentItem, "État général chariot");
+      if (canUseCommentFlags) {
+        applyCommentStateFlagsToAggregate(chariotAggregate, commentItem, "État général chariot");
+      }
 
-      if (commentItem?.controlePreventif === true || commentItem?.aControler === true) {
+      if (canUseCommentFlags && (commentItem?.controlePreventif === true || commentItem?.aControler === true)) {
         applyFlagsToAggregate(chariotAggregate, makeFlags({ controlePreventif: true }));
         chariotAggregate.dateCtrl = pickLatestDate(
           chariotAggregate.dateCtrl,
@@ -880,15 +883,18 @@ function collectInterventionRows(
       }
     });
 
-    COMMENTS_GROUPE_MOTEUR[key].forEach((commentItem) => {
+    COMMENTS_GROUPE_MOTEUR[key].forEach((commentItem, commentIndex) => {
       const hasTextContent =
         (commentItem?.text || "").trim() !== "" ||
         (commentItem?.elementConcerne || "").trim() !== "" ||
         (commentItem?.date || "").trim() !== "";
+      const canUseCommentFlags = commentIndex > 0 && hasTextContent;
 
-      applyCommentStateFlagsToAggregate(aggregate, commentItem, "État général groupe moteur");
+      if (canUseCommentFlags) {
+        applyCommentStateFlagsToAggregate(aggregate, commentItem, "État général groupe moteur");
+      }
 
-      if (commentItem?.controlePreventif === true || commentItem?.aControler === true) {
+      if (canUseCommentFlags && (commentItem?.controlePreventif === true || commentItem?.aControler === true)) {
         applyFlagsToAggregate(aggregate, makeFlags({ controlePreventif: true }));
         aggregate.dateCtrl = pickLatestDate(aggregate.dateCtrl, commentItem.date || "");
       }
@@ -931,15 +937,18 @@ function collectInterventionRows(
       pieceOrder: 0
     });
 
-    injecteurCommentsStore[key].forEach((item) => {
+    injecteurCommentsStore[key].forEach((item, commentIndex) => {
       const hasTextContent =
         (item?.text || "").trim() !== "" ||
         (item?.elementConcerne || "").trim() !== "" ||
         (item?.date || "").trim() !== "";
+      const canUseCommentFlags = commentIndex > 0 && hasTextContent;
 
-      applyCommentStateFlagsToAggregate(injecteurCommentAggregate, item, "État général injecteur");
+      if (canUseCommentFlags) {
+        applyCommentStateFlagsToAggregate(injecteurCommentAggregate, item, "État général injecteur");
+      }
 
-      if (item?.controlePreventif === true || item?.aControler === true) {
+      if (canUseCommentFlags && (item?.controlePreventif === true || item?.aControler === true)) {
         applyFlagsToAggregate(injecteurCommentAggregate, makeFlags({ controlePreventif: true }));
         injecteurCommentAggregate.dateCtrl = pickLatestDate(
           injecteurCommentAggregate.dateCtrl,
@@ -1081,15 +1090,18 @@ function collectInterventionRows(
       }
     });
 
-    COMMENTS_SORTIES[key].forEach((commentItem) => {
+    COMMENTS_SORTIES[key].forEach((commentItem, commentIndex) => {
       const hasTextContent =
         (commentItem?.text || "").trim() !== "" ||
         (commentItem?.elementConcerne || "").trim() !== "" ||
         (commentItem?.date || "").trim() !== "";
+      const canUseCommentFlags = commentIndex > 0 && hasTextContent;
 
-      applyCommentStateFlagsToAggregate(aggregate, commentItem, "État général sortie");
+      if (canUseCommentFlags) {
+        applyCommentStateFlagsToAggregate(aggregate, commentItem, "État général sortie");
+      }
 
-      if (commentItem?.controlePreventif === true || commentItem?.aControler === true) {
+      if (canUseCommentFlags && (commentItem?.controlePreventif === true || commentItem?.aControler === true)) {
         applyFlagsToAggregate(aggregate, makeFlags({ controlePreventif: true }));
         aggregate.dateCtrl = pickLatestDate(aggregate.dateCtrl, commentItem.date || "");
       }
