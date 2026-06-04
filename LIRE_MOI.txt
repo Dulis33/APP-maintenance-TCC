@@ -1,9 +1,0 @@
-Correction accueil détail par famille
-
-Modifications :
-- Accueil : détail des anomalies séparé par famille : Cellules, Chariots, Groupes moteur, EnergyBox / Pickups, Injecteurs, Sorties, Lignes manuelles.
-- Chaque bouton de famille affiche ses pastilles compteurs.
-- Suppression de la pastille Problématique dans le bandeau haut.
-- Le bouton Problématiques / Actions affiche directement le compteur de problématiques ouvertes.
-- Mode intervention : filtres par familles détaillées ajoutés.
-- Compatibilité conservée avec les anciens filtres globaux trieur / injecteur / sortie.
