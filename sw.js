@@ -2,7 +2,7 @@
    Version corrigée : cache robuste, nouveaux fichiers JS, index.html comme accueil.
 */
 
-const CACHE_NAME = "suivi-tcc-offline-autonome-20260604-1";
+const CACHE_NAME = "suivi-tcc-offline-autonome-20260604-2";
 const INDEX_FALLBACK = "./index.html";
 
 const CORE_FILES = [
