@@ -1842,9 +1842,22 @@ function installCelluleCycleViewHooks() {
   }
 
   if (typeof renderCelluleView === "function" && !renderCelluleView.__celluleCycleWrapped) {
+    const originalRenderCelluleView = renderCelluleView;
+
     renderCelluleView = function (celluleNumber, chariotNumber = null) {
+      const requestedSection = currentState?.data?.celluleSection;
+
+      // Clic normal sur une cellule depuis un chariot : on conserve l'ancien rendu visuel avec boutons.
+      // Le nouveau cycle cellule ne s'ouvre que lorsqu'une section celluleSection est explicitement demandée
+      // depuis le bouton global "Suivi défauts cellules" ou depuis son propre menu.
+      if (!requestedSection) {
+        originalRenderCelluleView(celluleNumber, chariotNumber);
+        return;
+      }
+
       renderCelluleCycleHubView(celluleNumber, chariotNumber);
     };
+
     renderCelluleView.__celluleCycleWrapped = true;
   }
 
