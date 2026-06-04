@@ -94,19 +94,10 @@ function normalizeFormulaireSection(sec = {}) {
     id:        s.id        || generateFormulaireId(),
     titre:     s.titre     || "",
     type:      s.type      || "ok_nok",
-    // items peut contenir des strings (simple) ou des objets {label, index, tableauType, convoyeurKey}
-    items:     Array.isArray(s.items) ? s.items.map((item) => {
-      if (typeof item === "object" && item !== null) return { ...item };
-      return item;
-    }) : [],
+    items:     Array.isArray(s.items)      ? [...s.items]      : [],
     precisions: Array.isArray(s.precisions) ? [...s.precisions] : [],
-    anomalie:  s.anomalie  || "aucune",  // critique | aPrevoir | aucune | preventif
-    lignes:    typeof s.lignes === "number" ? s.lignes : 2,
-    // Liaison piece au niveau section (optionnel)
-    pieceIndex:    typeof s.pieceIndex === "number" ? s.pieceIndex : undefined,
-    index:         typeof s.index === "number" ? s.index : undefined,
-    tableauType:   s.tableauType || undefined,
-    convoyeurKey:  s.convoyeurKey || undefined
+    anomalie:  s.anomalie  || "aucune",  // critique | aPrevoir | aucune
+    lignes:    typeof s.lignes === "number" ? s.lignes : 2  // pour texte_libre
   };
 }
 
@@ -236,11 +227,13 @@ function generatePlanId() {
 
 const RECURRENCES = [
   { key: "ponctuel",    label: "Ponctuel (une seule fois)" },
-  { key: "semaine",     label: "Toutes les semaines",      jours: 7  },
-  { key: "2semaines",   label: "Toutes les 2 semaines",    jours: 14 },
-  { key: "3semaines",   label: "Toutes les 3 semaines",    jours: 21 },
-  { key: "mensuel",     label: "Tous les mois",            mois: 1   },
-  { key: "trimestriel", label: "Tous les trimestres",      mois: 3   }
+  { key: "quotidien",   label: "Tous les jours",            jours: 1  },
+  { key: "semaine",     label: "Toutes les semaines",       jours: 7  },
+  { key: "2semaines",   label: "Toutes les 2 semaines",     jours: 14 },
+  { key: "3semaines",   label: "Toutes les 3 semaines",     jours: 21 },
+  { key: "mensuel",     label: "Tous les mois",             mois: 1   },
+  { key: "trimestriel", label: "Tous les trimestres",       mois: 3   },
+  { key: "annuel",      label: "Tous les ans",              mois: 12  }
 ];
 
 function getRecurrenceLabel(key) {
