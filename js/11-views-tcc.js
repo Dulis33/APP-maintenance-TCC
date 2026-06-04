@@ -432,6 +432,11 @@ function renderGroupeMoteurDetailView(groupNumber) {
   card.appendChild(createStatusLight(state === "off" ? false : true));
   card.appendChild(createTable(MODELE_GROUPE_MOTEUR, DATA_GROUPE_MOTEUR, key));
 
+  if (typeof createPlansPreventifBlock === "function") {
+    const planBlock = createPlansPreventifBlock("groupeMoteur", groupNumber);
+    if (planBlock) card.appendChild(planBlock);
+  }
+
   appView.appendChild(card);
 
   appView.appendChild(
@@ -501,6 +506,11 @@ function renderChariotView(chariotNumber) {
   card.appendChild(createStatusLight(state === "off" ? false : true));
   card.appendChild(createTable(parts, DATA_CHARIOTS, key));
 
+  if (typeof createPlansPreventifBlock === "function") {
+    const planBlock = createPlansPreventifBlock("chariot", chariotNumber);
+    if (planBlock) card.appendChild(planBlock);
+  }
+
   appView.appendChild(card);
 
   appView.appendChild(
@@ -543,6 +553,11 @@ function renderChariotPiecesView(chariotNumber) {
 
   card.appendChild(createStatusLight(state === "off" ? false : true));
   card.appendChild(createTable(parts, DATA_CHARIOTS, key));
+
+  if (typeof createPlansPreventifBlock === "function") {
+    const planBlock = createPlansPreventifBlock("chariot", chariotNumber);
+    if (planBlock) card.appendChild(planBlock);
+  }
 
   appView.appendChild(card);
 
@@ -2171,6 +2186,11 @@ function renderSortieView(sortieNumber) {
 
   card.appendChild(createStatusLight(state === "off" ? false : true));
   card.appendChild(createTable(MODELE_SORTIE, DATA_SORTIES, key));
+
+  if (typeof createPlansPreventifBlock === "function") {
+    const planBlock = createPlansPreventifBlock("sortie", sortieNumber);
+    if (planBlock) card.appendChild(planBlock);
+  }
 
   appView.appendChild(card);
 

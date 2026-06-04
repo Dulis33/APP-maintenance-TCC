@@ -381,21 +381,19 @@ function validerFormulaire(plan, modele, reponses, equipLabel) {
     }
   });
 
-  // Créer les anomalies dans le système de commentaires
-  if (anomalies.length > 0 && typeof COMMENTS_GLOBAL !== "undefined") {
-    const commentKey = typeof getGlobalCommentKey === "function"
-      ? getGlobalCommentKey()
-      : "global";
-
+  // Créer les anomalies dans le système de commentaires des équipements.
+  // L'ancien test COMMENTS_GLOBAL bloquait tout car ce stockage global n'existe pas dans l'appli.
+  if (anomalies.length > 0) {
     anomalies.forEach((anomalie) => {
       const texte = `[${modele.nom}] ${anomalie.section}`;
 
-      // Essayer d'ajouter dans les commentaires de l'équipement
-      if (plan.equipements && plan.equipements.length > 0) {
+      if (Array.isArray(plan.equipements)) {
         plan.equipements.forEach((eq) => {
           try {
             addAnomalieComment(eq, texte, anomalie.type, dateVal);
-          } catch(e) {}
+          } catch(e) {
+            console.warn("Anomalie formulaire non ajoutée :", e);
+          }
         });
       }
     });
@@ -470,9 +468,13 @@ function addAnomalieComment(eq, texte, typeAnomalie, date) {
     : { date: "", constat: "", critique: false, aPrevoir: false };
 
   newComment.date = date;
+  newComment.text = texte;
   newComment.constat = texte;
+  newComment.elementConcerne = texte;
   newComment.critique = typeAnomalie === "critique";
   newComment.aPrevoir = typeAnomalie === "aPrevoir";
+  newComment.aControler = typeAnomalie === "aControler";
+  newComment.controlePreventif = typeAnomalie === "controlePreventif";
 
   store[key].push(newComment);
 }

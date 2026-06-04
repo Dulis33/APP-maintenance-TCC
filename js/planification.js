@@ -500,7 +500,7 @@ function openPlanificationPopup(preselect = {}) {
    BLOC "PRÉVENTIFS PROGRAMMÉS" dans les tableaux
 ==================================================== */
 
-function createPlansPreventifBlock(type, id, convoyeurKey, tableauType) {
+function createPlansPreventifBlockBase(type, id, convoyeurKey, tableauType) {
   const plans = getPlansForEquipement(type, id, convoyeurKey, tableauType);
   if (!plans || plans.length === 0) return null;
 
@@ -536,9 +536,13 @@ function createPlansPreventifBlock(type, id, convoyeurKey, tableauType) {
     // Infos
     const cardInfo = document.createElement("div");
     cardInfo.className = "planif-plan-info";
+    const modeleFormulaire = plan.formulaireId && typeof getModeleFormulaire === "function"
+      ? getModeleFormulaire(plan.formulaireId)
+      : null;
     cardInfo.innerHTML =
       `Échéance : <strong>${formatDateFR(plan.prochaineEcheance)}</strong> &nbsp;•&nbsp; ` +
-      `${getRecurrenceLabel(plan.recurrence)}`;
+      `${getRecurrenceLabel(plan.recurrence)}` +
+      (modeleFormulaire ? ` &nbsp;•&nbsp; Formulaire : <strong>${modeleFormulaire.nom}</strong>` : "");
     card.appendChild(cardInfo);
 
     // Historique (dernier) 
@@ -551,8 +555,9 @@ function createPlansPreventifBlock(type, id, convoyeurKey, tableauType) {
       card.appendChild(cardHist);
     }
 
-    // Bouton valider (si échu)
-    if (echu) {
+    // Bouton valider rapide : uniquement pour les préventifs sans formulaire.
+    // Les préventifs avec formulaire se valident depuis le formulaire complet affiché juste dessous.
+    if (echu && !plan.formulaireId) {
       const validateRow = document.createElement("div");
       validateRow.className = "planif-plan-validate-row";
 
@@ -621,7 +626,7 @@ function createPlansPreventifBlock(type, id, convoyeurKey, tableauType) {
 ==================================================== */
 
 // Override de createPlansPreventifBlock pour inclure les formulaires
-const _origCreatePlansPreventifBlock = createPlansPreventifBlock;
+const _origCreatePlansPreventifBlock = createPlansPreventifBlockBase;
 function createPlansPreventifBlock(type, id, convoyeurKey, tableauType) {
   const block = _origCreatePlansPreventifBlock(type, id, convoyeurKey, tableauType);
   if (!block) return null;
@@ -633,11 +638,15 @@ function createPlansPreventifBlock(type, id, convoyeurKey, tableauType) {
     return plan.equipements && plan.equipements.some((eq) => {
       if (eq.type !== type) return false;
       if (type === "injecteur") {
-        const eqId = typeof eq.injecteurId === "string" ? parseInt(eq.injecteurId) : eq.injecteurId;
-        return eqId === id && (!convoyeurKey || eq.convoyeurKey === convoyeurKey);
+        const eqId = typeof eq.injecteurId === "string" ? parseInt(eq.injecteurId, 10) : eq.injecteurId;
+        const currentId = typeof id === "string" ? parseInt(id, 10) : id;
+        return eqId === currentId
+          && (!convoyeurKey || eq.convoyeurKey === convoyeurKey)
+          && (!tableauType || eq.tableauType === tableauType);
       }
+      const currentId = typeof id === "string" ? parseInt(id, 10) : id;
       return Array.isArray(eq.ids) && eq.ids.some((i) => {
-        return (typeof i === "string" ? parseInt(i) : i) === id;
+        return (typeof i === "string" ? parseInt(i, 10) : i) === currentId;
       });
     });
   });

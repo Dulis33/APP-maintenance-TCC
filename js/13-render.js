@@ -148,6 +148,14 @@ case "chariotPieces":
       renderCelluleView(stateData.celluleNumber, stateData.chariotNumber);
       break;
 
+    case "cellulesCycle":
+      if (typeof renderCellulesCycleView === "function") {
+        renderCellulesCycleView();
+      } else {
+        goHomeState();
+      }
+      break;
+
     case "celluleControleRoutine":
       renderCelluleControleRoutineView(
         stateData.celluleNumber,

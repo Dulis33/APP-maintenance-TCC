@@ -492,7 +492,11 @@ function createEmptyPayload() {
     globalProblemsArchive: [],
 
     manualInterventionRows: [],
-    interventionCommentOverrides: {}
+    interventionCommentOverrides: {},
+
+    plansPreventifs: [],
+    modelesFormulaires: [],
+    celluleDossiers: {}
   };
 }
 

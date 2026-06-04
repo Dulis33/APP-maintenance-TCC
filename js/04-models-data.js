@@ -253,15 +253,20 @@ function calcProchaineDateEcheance(dateRealiseeStr, recurrenceKey) {
 }
 
 function normalizePlanPreventif(plan = {}) {
+  const safePlan = plan && typeof plan === "object" ? plan : {};
   return {
-    id:               plan.id || generatePlanId(),
-    nom:              plan.nom || "Préventif",
-    recurrence:       plan.recurrence || "ponctuel",
-    dateCreation:     plan.dateCreation || "",
-    prochaineEcheance: plan.prochaineEcheance || "",
-    equipements:      Array.isArray(plan.equipements) ? plan.equipements : [],
-    statut:           plan.statut || "actif",
-    historiqueRealisations: Array.isArray(plan.historiqueRealisations) ? plan.historiqueRealisations : []
+    id:               safePlan.id || generatePlanId(),
+    nom:              safePlan.nom || "Préventif",
+    recurrence:       safePlan.recurrence || "ponctuel",
+    dateCreation:     safePlan.dateCreation || "",
+    prochaineEcheance: safePlan.prochaineEcheance || "",
+    equipements:      Array.isArray(safePlan.equipements) ? safePlan.equipements : [],
+    statut:           safePlan.statut || "actif",
+    formulaireId:     safePlan.formulaireId || null,
+    reponsesEnCours:  safePlan.reponsesEnCours && typeof safePlan.reponsesEnCours === "object" && !Array.isArray(safePlan.reponsesEnCours)
+      ? { ...safePlan.reponsesEnCours }
+      : {},
+    historiqueRealisations: Array.isArray(safePlan.historiqueRealisations) ? safePlan.historiqueRealisations : []
   };
 }
 

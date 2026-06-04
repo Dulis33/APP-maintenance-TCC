@@ -678,6 +678,12 @@ function renderInjecteurDetailView(injecteurNumber) {
   });
 
   card.appendChild(grid);
+
+  if (typeof createPlansPreventifBlock === "function") {
+    const planBlock = createPlansPreventifBlock("injecteur", injecteurNumber);
+    if (planBlock) card.appendChild(planBlock);
+  }
+
   appView.appendChild(card);
 }
 
@@ -712,6 +718,11 @@ function renderInjecteurConvoyeurDetailView(injecteurNumber, convoyeurKey) {
   card.appendChild(
     createInjecteurPieceTable(injecteurNumber, convoyeurKey, "motorisation")
   );
+
+  if (typeof createPlansPreventifBlock === "function") {
+    const planBlock = createPlansPreventifBlock("injecteur", injecteurNumber, convoyeurKey);
+    if (planBlock) card.appendChild(planBlock);
+  }
 
   appView.appendChild(card);
 }
