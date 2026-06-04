@@ -451,9 +451,15 @@ function sanitizeInjecteurSection(source) {
     return createEmptyInjecteurSection();
   }
 
+  const normFn = typeof normalizeInjecteurPieceRow === "function" ? normalizeInjecteurPieceRow : null;
+
   return {
-    convoyeur: Array.isArray(source.convoyeur) ? source.convoyeur : [],
-    motorisation: Array.isArray(source.motorisation) ? source.motorisation : []
+    convoyeur: Array.isArray(source.convoyeur)
+      ? source.convoyeur.map((row) => { try { return normFn ? normFn(row) : row; } catch(e) { return row; } })
+      : [],
+    motorisation: Array.isArray(source.motorisation)
+      ? source.motorisation.map((row) => { try { return normFn ? normFn(row) : row; } catch(e) { return row; } })
+      : []
   };
 }
 
@@ -626,16 +632,31 @@ function applyLoadedData(data) {
     Object.assign(DATA_CELLULES, data.dataCellules);
   }
 
+  // Normaliser les rows à l'import pour effacer les anciens champs fantômes
+  function normalizeStoreRows(store, normFn) {
+    if (!normFn) return;
+    Object.keys(store).forEach((key) => {
+      if (Array.isArray(store[key])) {
+        store[key] = store[key].map((row) => {
+          try { return normFn(row); } catch(e) { return row; }
+        });
+      }
+    });
+  }
+
   if (isPlainObject(data.dataChariots)) {
     Object.assign(DATA_CHARIOTS, data.dataChariots);
+    normalizeStoreRows(DATA_CHARIOTS, typeof normalizeRow === "function" ? normalizeRow : null);
   }
 
   if (isPlainObject(data.dataGroupeMoteur)) {
     Object.assign(DATA_GROUPE_MOTEUR, data.dataGroupeMoteur);
+    normalizeStoreRows(DATA_GROUPE_MOTEUR, typeof normalizeRow === "function" ? normalizeRow : null);
   }
 
   if (isPlainObject(data.dataSorties)) {
     Object.assign(DATA_SORTIES, data.dataSorties);
+    normalizeStoreRows(DATA_SORTIES, typeof normalizeRow === "function" ? normalizeRow : null);
   }
 
   if (isPlainObject(data.dataEnergyBox)) {
