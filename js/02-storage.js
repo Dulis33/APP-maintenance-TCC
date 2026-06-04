@@ -550,6 +550,21 @@ function buildPayload() {
   };
 }
 
+function sanitizeInjecteurModelSection(source) {
+  // Pour les MODELES (piece/reference/repere) — pas de normalizeRow
+  if (!isPlainObject(source)) return { convoyeur: [], motorisation: [] };
+  return {
+    convoyeur: Array.isArray(source.convoyeur) ? source.convoyeur.map((row) => {
+      if (!row || typeof row !== "object") return row;
+      return { piece: row.piece || "", reference: row.reference || "", repere: row.repere || "" };
+    }) : [],
+    motorisation: Array.isArray(source.motorisation) ? source.motorisation.map((row) => {
+      if (!row || typeof row !== "object") return row;
+      return { piece: row.piece || "", reference: row.reference || "", repere: row.repere || "" };
+    }) : []
+  };
+}
+
 function applyInjecteurModels(sourceRoot) {
   const injecteurIds = getInjecteurIds();
 
@@ -561,7 +576,7 @@ function applyInjecteurModels(sourceRoot) {
 
   injecteurIds.forEach((inj) => {
     INJECTEUR_CONVOYEURS.forEach((conv) => {
-      MODELE_INJECTEUR_CONVOYEURS[inj][conv.key] = sanitizeInjecteurSection(
+      MODELE_INJECTEUR_CONVOYEURS[inj][conv.key] = sanitizeInjecteurModelSection(
         sourceRoot?.[inj]?.[conv.key]
       );
     });
