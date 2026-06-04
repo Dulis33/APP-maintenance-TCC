@@ -5494,3 +5494,46 @@ body.home-fit-emergency.home-screen-fit #appView:has(.problem-home-button) > .bi
   .form-btns-row { flex-direction: column; }
   .form-btn-save, .form-btn-print { flex: none; width: 100% !important; }
 }
+
+/* =========================
+   FORMULAIRES - TYPE GRAVITE
+========================= */
+
+.form-item-gravite-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.form-item-gravite-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.form-gravite-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 5px 10px;
+  background: rgba(246, 173, 85, 0.07);
+  border-radius: 7px;
+  border: 1px solid rgba(246, 173, 85, 0.15);
+  margin-left: 8px;
+}
+
+/* Gravité À prévoir */
+.form-radio-grav-aPrevoir { border-color: rgba(246, 173, 85, 0.4); color: #f6ad55; font-size: 11px; }
+.form-radio-grav-aPrevoir:has(input:checked) { background: #f6ad55; color: #000; border-color: #f6ad55; }
+
+/* Gravité Critique */
+.form-radio-grav-critique { border-color: rgba(229, 62, 62, 0.4); color: #fc8181; font-size: 11px; }
+.form-radio-grav-critique:has(input:checked) { background: #e53e3e; color: #fff; border-color: #e53e3e; }
+
+/* Gravité Préventif */
+.form-radio-grav-preventif { border-color: rgba(72, 187, 120, 0.4); color: #48bb78; font-size: 11px; }
+.form-radio-grav-preventif:has(input:checked) { background: #48bb78; color: #fff; border-color: #48bb78; }
