@@ -6,6 +6,101 @@
    - Historique des réponses
 ===================================================== */
 
+/* ====================================================
+   HELPERS PIÈCES
+==================================================== */
+
+function getPiecesForEquipement(typeEquipement, convoyeurKey) {
+  const pieces = [];
+  try {
+    if (typeEquipement === "groupeMoteur" && typeof MODELE_GROUPE_MOTEUR !== "undefined") {
+      (MODELE_GROUPE_MOTEUR || []).forEach((p, idx) => {
+        if (p && p.piece) pieces.push({
+          label: p.piece + (p.repere ? " (rep. " + p.repere + ")" : ""),
+          repere: p.repere || "", index: idx, tableauType: "convoyeur"
+        });
+      });
+    } else if (typeEquipement === "sortie" && typeof MODELE_SORTIE !== "undefined") {
+      (MODELE_SORTIE || []).forEach((p, idx) => {
+        if (p && p.piece) pieces.push({
+          label: p.piece + (p.repere ? " (rep. " + p.repere + ")" : ""),
+          repere: p.repere || "", index: idx, tableauType: "convoyeur"
+        });
+      });
+    } else if (typeEquipement === "chariot" && typeof MODELE_CHARIOT_STANDARD !== "undefined") {
+      (MODELE_CHARIOT_STANDARD || []).forEach((p, idx) => {
+        if (p && p.piece) pieces.push({
+          label: p.piece + (p.repere ? " (rep. " + p.repere + ")" : ""),
+          repere: p.repere || "", index: idx, tableauType: "convoyeur"
+        });
+      });
+    } else if (typeEquipement === "injecteur" && typeof MODELE_INJECTEUR_CONVOYEURS !== "undefined") {
+      const firstId = typeof CONFIG_APP !== "undefined" && CONFIG_APP.INJECTEUR_IDS
+        ? CONFIG_APP.INJECTEUR_IDS[0] : 530;
+      const convKeys = convoyeurKey
+        ? [convoyeurKey]
+        : (typeof INJECTEUR_CONVOYEURS !== "undefined" ? INJECTEUR_CONVOYEURS.map(c => c.key) : []);
+      convKeys.forEach((ck) => {
+        ["convoyeur", "motorisation"].forEach((tt) => {
+          const model = MODELE_INJECTEUR_CONVOYEURS?.[firstId]?.[ck]?.[tt];
+          if (Array.isArray(model)) {
+            model.forEach((p, idx) => {
+              if (p && p.piece) pieces.push({
+                label: p.piece + (p.repere ? " (rep. " + p.repere + ")" : "")
+                  + " [" + (tt === "convoyeur" ? "Pièces" : "Motorisation") + "]",
+                repere: p.repere || "", index: idx,
+                tableauType: tt, convoyeurKey: ck
+              });
+            });
+          }
+        });
+      });
+    }
+  } catch(e) {}
+  return pieces;
+}
+
+function updatePieceLine(plan, itemObj, etat, dateVal) {
+  if (itemObj.pieceIndex === undefined && itemObj.index === undefined) return;
+  const pIdx = itemObj.pieceIndex !== undefined ? itemObj.pieceIndex : itemObj.index;
+
+  (plan.equipements || []).forEach((eq) => {
+    try {
+      if (eq.type === "injecteur") {
+        const ck = itemObj.convoyeurKey || eq.convoyeurKey
+          || (typeof INJECTEUR_CONVOYEURS !== "undefined" ? INJECTEUR_CONVOYEURS[0]?.key : null);
+        const tt = itemObj.tableauType || "convoyeur";
+        const rows = DATA_INJECTEUR_CONVOYEURS?.[eq.injecteurId]?.[ck]?.[tt];
+        if (Array.isArray(rows) && rows[pIdx]) applyEtatToRow(rows[pIdx], etat, dateVal);
+        return;
+      }
+      let store = null;
+      let key = null;
+      if (eq.type === "chariot" && Array.isArray(eq.ids)) {
+        store = DATA_CHARIOTS;
+        key = typeof getChariotKey === "function" ? getChariotKey(eq.ids[0]) : null;
+      } else if (eq.type === "groupeMoteur" && Array.isArray(eq.ids)) {
+        store = DATA_GROUPE_MOTEUR;
+        key = typeof getGroupeMoteurKey === "function" ? getGroupeMoteurKey(eq.ids[0]) : null;
+      } else if (eq.type === "sortie" && Array.isArray(eq.ids)) {
+        store = DATA_SORTIES;
+        key = typeof getSortieKey === "function" ? getSortieKey(eq.ids[0]) : null;
+      }
+      if (store && key && Array.isArray(store[key]) && store[key][pIdx]) {
+        applyEtatToRow(store[key][pIdx], etat, dateVal);
+      }
+    } catch(e) {}
+  });
+}
+
+function applyEtatToRow(row, etat, dateVal) {
+  row.dateCtrl = dateVal;
+  if (etat === "critique")   { row.critique = true; row.aPrevoir = false; row.controlePreventif = false; }
+  else if (etat === "aPrevoir") { row.aPrevoir = true; row.critique = false; row.controlePreventif = false; }
+  else if (etat === "preventif") { row.controlePreventif = true; row.critique = false; row.aPrevoir = false; }
+  else { row.critique = false; row.aPrevoir = false; } // ok
+}
+
 /* ---- Rendu d'une section ---- */
 
 function renderFormulaireSection(section, reponses) {
@@ -54,6 +149,59 @@ function renderFormulaireSection(section, reponses) {
         itemRow.appendChild(lbl);
         itemRow.appendChild(mkOkNok(itemKey, reponses, true));
         body.appendChild(itemRow);
+      });
+      break;
+    }
+
+    case "ok_nok_gravite_multiple": {
+      (section.items || []).forEach((item, idx) => {
+        const itemKey = section.id + "_item" + idx;
+        const itemObj = typeof item === "object" ? item : { label: item };
+        const lbl_text = itemObj.label || itemObj.nom || String(item);
+
+        const itemWrap = document.createElement("div");
+        itemWrap.className = "form-item-gravite-wrap";
+
+        const itemHead = document.createElement("div");
+        itemHead.className = "form-item-gravite-head";
+        const lbl = document.createElement("span");
+        lbl.className = "form-item-label";
+        lbl.textContent = lbl_text;
+        itemHead.appendChild(lbl);
+        const oknokRow = mkOkNok(itemKey, reponses, true);
+        itemHead.appendChild(oknokRow);
+        itemWrap.appendChild(itemHead);
+
+        const graviteRow = document.createElement("div");
+        graviteRow.className = "form-gravite-row";
+        graviteRow.style.display = reponses[itemKey + "_val"] === "nok" ? "flex" : "none";
+        const graviteLbl = document.createElement("span");
+        graviteLbl.className = "form-urgent-label";
+        graviteLbl.textContent = "Gravité :";
+        graviteRow.appendChild(graviteLbl);
+
+        const gravLabels = { aPrevoir: "À prévoir", critique: "Critique", preventif: "Préventif" };
+        const gravName = "grav_" + itemKey + "_" + Math.random().toString(36).substr(2,5);
+        ["aPrevoir", "critique", "preventif"].forEach((grav) => {
+          const label = document.createElement("label");
+          label.className = "form-radio-label form-radio-grav-" + grav;
+          const input = document.createElement("input");
+          input.type = "radio"; input.name = gravName; input.value = grav;
+          input.checked = reponses[itemKey + "_grav"] === grav;
+          input.onchange = () => { reponses[itemKey + "_grav"] = grav; };
+          label.appendChild(input);
+          label.appendChild(document.createTextNode(" " + gravLabels[grav]));
+          graviteRow.appendChild(label);
+        });
+
+        itemWrap.appendChild(graviteRow);
+        body.appendChild(itemWrap);
+
+        oknokRow.querySelectorAll("input[type=radio]").forEach((r) => {
+          r.addEventListener("change", () => {
+            graviteRow.style.display = reponses[itemKey + "_val"] === "nok" ? "flex" : "none";
+          });
+        });
       });
       break;
     }
@@ -344,7 +492,34 @@ function validerFormulaire(plan, modele, reponses, equipLabel) {
   const anomalies = [];
 
   modele.sections.forEach((section) => {
-    if (section.anomalie === "aucune") return;
+
+    // Type avec gravité individuelle par item + liaison pièces
+    if (section.type === "ok_nok_gravite_multiple") {
+      (section.items || []).forEach((item, idx) => {
+        const itemKey = section.id + "_item" + idx;
+        const itemObj = typeof item === "object" ? item : { label: item };
+        const isNok = reponses[itemKey + "_val"] === "nok";
+        const isOk  = reponses[itemKey + "_val"] === "ok";
+        // Inscrire date de contrôle dans la ligne de pièce (OK ou NOK)
+        if ((isNok || isOk) && (itemObj.pieceIndex !== undefined || itemObj.index !== undefined)) {
+          updatePieceLine(plan, itemObj, isNok ? (reponses[itemKey + "_grav"] || "aPrevoir") : "ok", dateVal);
+        }
+        if (isNok) {
+          const grav = reponses[itemKey + "_grav"] || section.anomalie || "aPrevoir";
+          anomalies.push({ section: section.titre + " — " + (itemObj.label || String(item)), type: grav });
+        }
+      });
+      return;
+    }
+
+    if (section.anomalie === "aucune") {
+      // Inscrire date si liaison pièce définie et réponse présente
+      if (section.pieceIndex !== undefined || section.index !== undefined) {
+        const val = reponses[section.id + "_val"];
+        if (val === "ok" || val === "nok") updatePieceLine(plan, section, val === "ok" ? "ok" : section.anomalie, dateVal);
+      }
+      return;
+    }
 
     let isNok = false;
     let detail = "";
@@ -362,13 +537,22 @@ function validerFormulaire(plan, modele, reponses, equipLabel) {
         if (autre) detail += " — " + autre;
       }
     } else if (section.type === "ok_nok_multiple") {
-      const nokItems = (section.items || []).filter((_, idx) =>
-        reponses[section.id + "_item" + idx + "_val"] === "nok"
-      );
-      if (nokItems.length > 0) {
-        isNok = true;
-        detail = " (" + nokItems.join(", ") + ")";
-      }
+      (section.items || []).forEach((item, idx) => {
+        const itemObj = typeof item === "object" ? item : { label: item };
+        const isItemNok = reponses[section.id + "_item" + idx + "_val"] === "nok";
+        const isItemOk  = reponses[section.id + "_item" + idx + "_val"] === "ok";
+        if ((isItemNok || isItemOk) && (itemObj.pieceIndex !== undefined || itemObj.index !== undefined)) {
+          updatePieceLine(plan, itemObj, isItemNok ? section.anomalie : "ok", dateVal);
+        }
+        if (isItemNok) detail += (detail ? ", " : " (") + (itemObj.label || String(item));
+      });
+      if (detail) { detail += ")"; isNok = true; }
+    }
+
+    // Liaison pièce au niveau section entière
+    if ((section.pieceIndex !== undefined || section.index !== undefined)) {
+      const val = reponses[section.id + "_val"];
+      if (val === "ok" || val === "nok") updatePieceLine(plan, section, val === "ok" ? "ok" : section.anomalie, dateVal);
     }
 
     if (isNok) {

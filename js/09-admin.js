@@ -755,123 +755,263 @@ function buildSectionEditor(form, sec, idx, onUpdate) {
   const wrap = document.createElement("div");
   wrap.style.cssText = "padding:10px 12px;background:var(--surface-soft);border:1px solid var(--border);border-radius:10px;display:flex;flex-direction:column;gap:7px;";
 
+  // En-tête section
   const delRow = document.createElement("div");
   delRow.style.cssText = "display:flex;justify-content:space-between;align-items:center;";
   const secNum = document.createElement("span");
   secNum.style.cssText = "font-size:10px;color:var(--text-muted);";
   secNum.textContent = "Section " + (idx + 1);
   const btnDel = document.createElement("button");
-  btnDel.type = "button";
-  btnDel.className = "model-delete-button";
-  btnDel.textContent = "Supprimer";
+  btnDel.type = "button"; btnDel.className = "model-delete-button"; btnDel.textContent = "Supprimer";
   btnDel.onclick = () => { form.sections.splice(idx, 1); onUpdate(); };
-  delRow.appendChild(secNum);
-  delRow.appendChild(btnDel);
+  delRow.appendChild(secNum); delRow.appendChild(btnDel);
   wrap.appendChild(delRow);
 
   const titreInput = document.createElement("input");
-  titreInput.type = "text";
-  titreInput.className = "model-input";
-  titreInput.placeholder = "Titre de la section";
-  titreInput.value = sec.titre || "";
+  titreInput.type = "text"; titreInput.className = "model-input";
+  titreInput.placeholder = "Titre de la section"; titreInput.value = sec.titre || "";
   titreInput.oninput = () => { sec.titre = titreInput.value; };
   wrap.appendChild(titreInput);
 
   const typeRow = document.createElement("div");
   typeRow.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;";
   const typeSelect = document.createElement("select");
-  typeSelect.className = "model-input";
-  typeSelect.style.flex = "1";
-  [["ok_nok","OK / NOK"],["ok_nok_urgent","OK / NOK + Urgent"],["ok_nok_multiple","OK / NOK par item"],["ok_nok_urgent_precision","OK / NOK + Urgent + Precisions"],["texte_libre","Texte libre"],["checkbox_liste","Liste de cases"],["numerique","Valeur numerique"]].forEach(([val,lbl]) => {
+  typeSelect.className = "model-input"; typeSelect.style.flex = "1";
+  [
+    ["ok_nok","OK / NOK"],
+    ["ok_nok_urgent","OK / NOK + Urgent"],
+    ["ok_nok_multiple","OK / NOK par item"],
+    ["ok_nok_gravite_multiple","OK / NOK + Gravite par item (liaison pieces)"],
+    ["ok_nok_urgent_precision","OK / NOK + Urgent + Precisions"],
+    ["texte_libre","Texte libre"],
+    ["checkbox_liste","Liste de cases"],
+    ["numerique","Valeur numerique"]
+  ].forEach(([val,lbl]) => {
     const opt = document.createElement("option");
     opt.value = val; opt.textContent = lbl; opt.selected = sec.type === val;
     typeSelect.appendChild(opt);
   });
   typeSelect.onchange = () => { sec.type = typeSelect.value; onUpdate(); };
+
   const anomSelect = document.createElement("select");
-  anomSelect.className = "model-input";
-  anomSelect.style.flex = "1";
-  [["aucune","Pas anomalie"],["aPrevoir","-> A prevoir"],["critique","-> Critique"]].forEach(([val,lbl]) => {
+  anomSelect.className = "model-input"; anomSelect.style.flex = "1";
+  [["aucune","Pas anomalie"],["aPrevoir","-> A prevoir"],["critique","-> Critique"],["preventif","-> Preventif"]].forEach(([val,lbl]) => {
     const opt = document.createElement("option");
     opt.value = val; opt.textContent = lbl; opt.selected = sec.anomalie === val;
     anomSelect.appendChild(opt);
   });
   anomSelect.onchange = () => { sec.anomalie = anomSelect.value; };
-  typeRow.appendChild(typeSelect);
-  typeRow.appendChild(anomSelect);
+  typeRow.appendChild(typeSelect); typeRow.appendChild(anomSelect);
   wrap.appendChild(typeRow);
 
-  // Items
+  // Items simples (ok_nok_multiple, checkbox_liste)
   if (sec.type === "ok_nok_multiple" || sec.type === "checkbox_liste") {
-    const iWrap = document.createElement("div");
-    iWrap.style.cssText = "display:flex;flex-direction:column;gap:5px;";
-    const iLbl = document.createElement("div");
-    iLbl.style.cssText = "font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;";
-    iLbl.textContent = "Items :";
-    iWrap.appendChild(iLbl);
-    (sec.items || []).forEach((item, iIdx) => {
-      const iRow = document.createElement("div");
-      iRow.style.cssText = "display:flex;gap:6px;";
-      const iInput = document.createElement("input");
-      iInput.type = "text";
-      iInput.className = "model-input";
-      iInput.value = item;
-      iInput.oninput = () => { sec.items[iIdx] = iInput.value; };
-      const iDel = document.createElement("button");
-      iDel.type = "button";
-      iDel.className = "model-delete-button";
-      iDel.textContent = "X";
-      iDel.style.cssText = "min-height:30px;padding:0 8px;font-size:11px;";
-      iDel.onclick = () => { sec.items.splice(iIdx, 1); onUpdate(); };
-      iRow.appendChild(iInput);
-      iRow.appendChild(iDel);
-      iWrap.appendChild(iRow);
-    });
-    const btnAddI = document.createElement("button");
-    btnAddI.type = "button";
-    btnAddI.className = "model-add-button";
-    btnAddI.style.cssText = "padding:5px 10px;font-size:11px;";
-    btnAddI.textContent = "+ Item";
-    btnAddI.onclick = () => { if (!sec.items) sec.items = []; sec.items.push("Nouvel item"); onUpdate(); };
-    iWrap.appendChild(btnAddI);
-    wrap.appendChild(iWrap);
+    wrap.appendChild(buildItemsEditor(sec, onUpdate, false));
   }
 
-  // Precisions
+  // Items avec gravite + liaison pieces (ok_nok_gravite_multiple)
+  if (sec.type === "ok_nok_gravite_multiple") {
+    wrap.appendChild(buildItemsGraviteEditor(form, sec, onUpdate));
+  }
+
+  // Precisions (ok_nok_urgent_precision)
   if (sec.type === "ok_nok_urgent_precision") {
-    const pWrap = document.createElement("div");
-    pWrap.style.cssText = "display:flex;flex-direction:column;gap:5px;";
-    const pLbl = document.createElement("div");
-    pLbl.style.cssText = "font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;";
-    pLbl.textContent = "Precisions :";
-    pWrap.appendChild(pLbl);
-    (sec.precisions || []).forEach((prec, pIdx) => {
-      const pRow = document.createElement("div");
-      pRow.style.cssText = "display:flex;gap:6px;";
-      const pInput = document.createElement("input");
-      pInput.type = "text";
-      pInput.className = "model-input";
-      pInput.value = prec;
-      pInput.oninput = () => { sec.precisions[pIdx] = pInput.value; };
-      const pDel = document.createElement("button");
-      pDel.type = "button";
-      pDel.className = "model-delete-button";
-      pDel.textContent = "X";
-      pDel.style.cssText = "min-height:30px;padding:0 8px;font-size:11px;";
-      pDel.onclick = () => { sec.precisions.splice(pIdx, 1); onUpdate(); };
-      pRow.appendChild(pInput);
-      pRow.appendChild(pDel);
-      pWrap.appendChild(pRow);
-    });
-    const btnAddP = document.createElement("button");
-    btnAddP.type = "button";
-    btnAddP.className = "model-add-button";
-    btnAddP.style.cssText = "padding:5px 10px;font-size:11px;";
-    btnAddP.textContent = "+ Precision";
-    btnAddP.onclick = () => { if (!sec.precisions) sec.precisions = []; sec.precisions.push("Nouvelle precision"); onUpdate(); };
-    pWrap.appendChild(btnAddP);
-    wrap.appendChild(pWrap);
+    wrap.appendChild(buildPrecisionsEditor(sec, onUpdate));
   }
 
   return wrap;
+}
+
+/* ---- Editeur items simples ---- */
+function buildItemsEditor(sec, onUpdate, withPiece) {
+  const iWrap = document.createElement("div");
+  iWrap.style.cssText = "display:flex;flex-direction:column;gap:5px;";
+  const iLbl = document.createElement("div");
+  iLbl.style.cssText = "font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;";
+  iLbl.textContent = "Items :";
+  iWrap.appendChild(iLbl);
+
+  (sec.items || []).forEach((item, iIdx) => {
+    const itemObj = typeof item === "object" ? item : { label: item };
+    const iRow = document.createElement("div");
+    iRow.style.cssText = "display:flex;gap:6px;";
+    const iInput = document.createElement("input");
+    iInput.type = "text"; iInput.className = "model-input";
+    iInput.value = itemObj.label || String(item);
+    iInput.oninput = () => {
+      if (typeof sec.items[iIdx] === "object") sec.items[iIdx].label = iInput.value;
+      else sec.items[iIdx] = iInput.value;
+    };
+    const iDel = document.createElement("button");
+    iDel.type = "button"; iDel.className = "model-delete-button"; iDel.textContent = "X";
+    iDel.style.cssText = "min-height:30px;padding:0 8px;font-size:11px;";
+    iDel.onclick = () => { sec.items.splice(iIdx, 1); onUpdate(); };
+    iRow.appendChild(iInput); iRow.appendChild(iDel);
+    iWrap.appendChild(iRow);
+  });
+
+  const btnAddI = document.createElement("button");
+  btnAddI.type = "button"; btnAddI.className = "model-add-button";
+  btnAddI.style.cssText = "padding:5px 10px;font-size:11px;";
+  btnAddI.textContent = "+ Item";
+  btnAddI.onclick = () => { if (!sec.items) sec.items = []; sec.items.push("Nouvel item"); onUpdate(); };
+  iWrap.appendChild(btnAddI);
+  return iWrap;
+}
+
+/* ---- Editeur items avec gravite + liaison pieces ---- */
+function buildItemsGraviteEditor(form, sec, onUpdate) {
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "display:flex;flex-direction:column;gap:8px;";
+
+  const lbl = document.createElement("div");
+  lbl.style.cssText = "font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;";
+  lbl.textContent = "Items (OK/NOK + gravite + piece liee) :";
+  wrap.appendChild(lbl);
+
+  // Charger les pieces disponibles pour ce type d equipement
+  const pieces = typeof getPiecesForEquipement === "function"
+    ? getPiecesForEquipement(form.typeEquipement)
+    : [];
+
+  // Selectionner le convoyeur si injecteur
+  let convoyeurKey = null;
+  if (form.typeEquipement === "injecteur" && typeof INJECTEUR_CONVOYEURS !== "undefined") {
+    const convRow = document.createElement("div");
+    convRow.style.cssText = "display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:4px;";
+    const convLbl = document.createElement("span");
+    convLbl.style.cssText = "font-size:11px;color:var(--text-soft);";
+    convLbl.textContent = "Convoyeur de reference :";
+    const convSel = document.createElement("select");
+    convSel.className = "model-input"; convSel.style.flex = "1";
+    INJECTEUR_CONVOYEURS.forEach((c) => {
+      const o = document.createElement("option"); o.value = c.key; o.textContent = c.label;
+      convSel.appendChild(o);
+    });
+    convSel.onchange = () => {
+      convoyeurKey = convSel.value;
+      onUpdate();
+    };
+    convoyeurKey = INJECTEUR_CONVOYEURS[0]?.key;
+    convRow.appendChild(convLbl); convRow.appendChild(convSel);
+    wrap.appendChild(convRow);
+  }
+
+  (sec.items || []).forEach((item, iIdx) => {
+    const itemObj = typeof item === "object" ? item : { label: item };
+
+    const iCard = document.createElement("div");
+    iCard.style.cssText = "padding:8px 10px;background:var(--surface-card);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column;gap:6px;";
+
+    // Libelle
+    const lblRow = document.createElement("div");
+    lblRow.style.cssText = "display:flex;gap:6px;align-items:center;";
+    const iInput = document.createElement("input");
+    iInput.type = "text"; iInput.className = "model-input"; iInput.style.flex = "1";
+    iInput.placeholder = "Libelle de l item";
+    iInput.value = itemObj.label || "";
+    iInput.oninput = () => { sec.items[iIdx].label = iInput.value; };
+    const iDel = document.createElement("button");
+    iDel.type = "button"; iDel.className = "model-delete-button"; iDel.textContent = "X";
+    iDel.style.cssText = "min-height:30px;padding:0 8px;font-size:11px;";
+    iDel.onclick = () => { sec.items.splice(iIdx, 1); onUpdate(); };
+    lblRow.appendChild(iInput); lblRow.appendChild(iDel);
+    iCard.appendChild(lblRow);
+
+    // Liaison piece
+    const pieceRow = document.createElement("div");
+    pieceRow.style.cssText = "display:flex;gap:6px;align-items:center;flex-wrap:wrap;";
+    const pieceLbl = document.createElement("span");
+    pieceLbl.style.cssText = "font-size:11px;color:var(--text-soft);white-space:nowrap;";
+    pieceLbl.textContent = "Piece liee :";
+
+    // Selecteur depuis le modele
+    const pieceSelect = document.createElement("select");
+    pieceSelect.className = "model-input"; pieceSelect.style.flex = "1";
+    const emptyOpt = document.createElement("option");
+    emptyOpt.value = ""; emptyOpt.textContent = "— Saisie manuelle —";
+    pieceSelect.appendChild(emptyOpt);
+
+    const currentPieces = typeof getPiecesForEquipement === "function"
+      ? getPiecesForEquipement(form.typeEquipement, convoyeurKey || itemObj.convoyeurKey)
+      : [];
+    currentPieces.forEach((p) => {
+      const o = document.createElement("option");
+      o.value = JSON.stringify({ index: p.index, tableauType: p.tableauType, convoyeurKey: p.convoyeurKey });
+      o.textContent = p.label;
+      o.selected = itemObj.index === p.index && itemObj.tableauType === p.tableauType
+        && itemObj.convoyeurKey === p.convoyeurKey;
+      pieceSelect.appendChild(o);
+    });
+    pieceSelect.onchange = () => {
+      if (pieceSelect.value) {
+        try {
+          const parsed = JSON.parse(pieceSelect.value);
+          sec.items[iIdx].index = parsed.index;
+          sec.items[iIdx].pieceIndex = parsed.index;
+          sec.items[iIdx].tableauType = parsed.tableauType;
+          sec.items[iIdx].convoyeurKey = parsed.convoyeurKey;
+          manualInput.value = "";
+          manualInput.style.display = "none";
+        } catch(e) {}
+      } else {
+        sec.items[iIdx].index = undefined;
+        sec.items[iIdx].pieceIndex = undefined;
+        manualInput.style.display = "";
+      }
+    };
+
+    // Saisie manuelle
+    const manualInput = document.createElement("input");
+    manualInput.type = "text"; manualInput.className = "model-input"; manualInput.style.flex = "1";
+    manualInput.placeholder = "Saisir repere ou description";
+    manualInput.value = itemObj.repereManuel || "";
+    manualInput.style.display = pieceSelect.value ? "none" : "";
+    manualInput.oninput = () => { sec.items[iIdx].repereManuel = manualInput.value; };
+
+    pieceRow.appendChild(pieceLbl); pieceRow.appendChild(pieceSelect); pieceRow.appendChild(manualInput);
+    iCard.appendChild(pieceRow);
+    wrap.appendChild(iCard);
+  });
+
+  const btnAdd = document.createElement("button");
+  btnAdd.type = "button"; btnAdd.className = "model-add-button";
+  btnAdd.style.cssText = "padding:5px 10px;font-size:11px;";
+  btnAdd.textContent = "+ Ajouter un item";
+  btnAdd.onclick = () => {
+    if (!sec.items) sec.items = [];
+    sec.items.push({ label: "Nouvel item", index: undefined, pieceIndex: undefined, tableauType: "convoyeur", convoyeurKey: convoyeurKey });
+    onUpdate();
+  };
+  wrap.appendChild(btnAdd);
+  return wrap;
+}
+
+/* ---- Editeur precisions ---- */
+function buildPrecisionsEditor(sec, onUpdate) {
+  const pWrap = document.createElement("div");
+  pWrap.style.cssText = "display:flex;flex-direction:column;gap:5px;";
+  const pLbl = document.createElement("div");
+  pLbl.style.cssText = "font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;";
+  pLbl.textContent = "Precisions :";
+  pWrap.appendChild(pLbl);
+  (sec.precisions || []).forEach((prec, pIdx) => {
+    const pRow = document.createElement("div"); pRow.style.cssText = "display:flex;gap:6px;";
+    const pInput = document.createElement("input");
+    pInput.type = "text"; pInput.className = "model-input"; pInput.value = prec;
+    pInput.oninput = () => { sec.precisions[pIdx] = pInput.value; };
+    const pDel = document.createElement("button");
+    pDel.type = "button"; pDel.className = "model-delete-button"; pDel.textContent = "X";
+    pDel.style.cssText = "min-height:30px;padding:0 8px;font-size:11px;";
+    pDel.onclick = () => { sec.precisions.splice(pIdx, 1); onUpdate(); };
+    pRow.appendChild(pInput); pRow.appendChild(pDel);
+    pWrap.appendChild(pRow);
+  });
+  const btnAddP = document.createElement("button");
+  btnAddP.type = "button"; btnAddP.className = "model-add-button";
+  btnAddP.style.cssText = "padding:5px 10px;font-size:11px;";
+  btnAddP.textContent = "+ Precision";
+  btnAddP.onclick = () => { if (!sec.precisions) sec.precisions = []; sec.precisions.push("Nouvelle precision"); onUpdate(); };
+  pWrap.appendChild(btnAddP);
+  return pWrap;
 }

@@ -94,10 +94,19 @@ function normalizeFormulaireSection(sec = {}) {
     id:        s.id        || generateFormulaireId(),
     titre:     s.titre     || "",
     type:      s.type      || "ok_nok",
-    items:     Array.isArray(s.items)      ? [...s.items]      : [],
+    // items peut contenir des strings (simple) ou des objets {label, index, tableauType, convoyeurKey}
+    items:     Array.isArray(s.items) ? s.items.map((item) => {
+      if (typeof item === "object" && item !== null) return { ...item };
+      return item;
+    }) : [],
     precisions: Array.isArray(s.precisions) ? [...s.precisions] : [],
-    anomalie:  s.anomalie  || "aucune",  // critique | aPrevoir | aucune
-    lignes:    typeof s.lignes === "number" ? s.lignes : 2  // pour texte_libre
+    anomalie:  s.anomalie  || "aucune",  // critique | aPrevoir | aucune | preventif
+    lignes:    typeof s.lignes === "number" ? s.lignes : 2,
+    // Liaison piece au niveau section (optionnel)
+    pieceIndex:    typeof s.pieceIndex === "number" ? s.pieceIndex : undefined,
+    index:         typeof s.index === "number" ? s.index : undefined,
+    tableauType:   s.tableauType || undefined,
+    convoyeurKey:  s.convoyeurKey || undefined
   };
 }
 
