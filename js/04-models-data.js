@@ -103,11 +103,22 @@ function normalizeFormulaireSection(sec = {}) {
 
 function normalizeModeleFormulaire(f = {}) {
   const safe = f && typeof f === "object" ? f : {};
+  // typeEquipements : tableau (nouveau format)
+  // typeEquipement  : string (ancien format, conservé pour compatibilité)
+  let typeEquipements = [];
+  if (Array.isArray(safe.typeEquipements) && safe.typeEquipements.length > 0) {
+    typeEquipements = [...safe.typeEquipements];
+  } else if (safe.typeEquipement) {
+    typeEquipements = [safe.typeEquipement];
+  } else {
+    typeEquipements = ["injecteur"];
+  }
   return {
-    id:            safe.id            || generateFormulaireId(),
-    nom:           safe.nom           || "Formulaire sans nom",
-    typeEquipement: safe.typeEquipement || "injecteur",
-    sections:      Array.isArray(safe.sections)
+    id:             safe.id  || generateFormulaireId(),
+    nom:            safe.nom || "Formulaire sans nom",
+    typeEquipement: typeEquipements[0] || "injecteur",  // compatibilité
+    typeEquipements: typeEquipements,
+    sections: Array.isArray(safe.sections)
       ? safe.sections.map(normalizeFormulaireSection)
       : []
   };
@@ -118,9 +129,14 @@ function getModeleFormulaire(id) {
 }
 
 function getModelesForEquipement(typeEquipement) {
-  return DATA_MODELES_FORMULAIRES.filter(
-    (f) => !typeEquipement || f.typeEquipement === typeEquipement
-  );
+  return DATA_MODELES_FORMULAIRES.filter((f) => {
+    if (!typeEquipement) return true;
+    // Chercher dans typeEquipements (nouveau) ou typeEquipement (ancien)
+    if (Array.isArray(f.typeEquipements)) {
+      return f.typeEquipements.includes(typeEquipement);
+    }
+    return f.typeEquipement === typeEquipement;
+  });
 }
 
 /* ---- Modèles pré-créés ---- */
