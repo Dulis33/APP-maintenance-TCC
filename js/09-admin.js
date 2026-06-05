@@ -444,6 +444,7 @@ function renderAdminView() {
   );
   appView.appendChild(createAdminNavButton("Modèle Sorties", "editModeleSortie"));
   appView.appendChild(createAdminNavButton("Modèle Injecteurs", "adminInjecteurs"));
+  appView.appendChild(createAdminNavButton("🔗 Modèle Convoyeurs", "adminConvoyeurs"));
   appView.appendChild(createAdminNavButton("Formulaires preventifs", "adminFormulaires"));
 
   const schemaCard = document.createElement("div");
@@ -641,7 +642,7 @@ function renderAdminFormulairesView() {
       const nom = document.createElement("div");
       nom.style.cssText = "font-weight:700;color:var(--text);";
       nom.textContent = form.nom;
-      const types = { chariot: "Chariots", groupeMoteur: "Groupes moteurs", injecteur: "Injecteurs", sortie: "Sorties" };
+      const types = { chariot: "Chariots", groupeMoteur: "Groupes moteurs", injecteur: "Injecteurs", sortie: "Sorties", convoyeur: "Convoyeurs" };
       const meta = document.createElement("div");
       meta.style.cssText = "font-size:11px;color:var(--text-muted);";
       meta.textContent = (types[form.typeEquipement] || form.typeEquipement) + " - " + (form.sections || []).length + " section(s)";
@@ -698,112 +699,17 @@ function renderAdminFormulaireDetailView(formulaireId) {
   const typeLabel = document.createElement("div");
   typeLabel.className = "manual-field-label";
   typeLabel.style.marginTop = "10px";
-  typeLabel.textContent = "Types d'equipement (plusieurs possibles)";
+  typeLabel.textContent = "Type equipement";
   card.appendChild(typeLabel);
-
-  // Types standards cochables
-  const typesStandards = [
-    { val: "injecteur",    lbl: "Injecteurs" },
-    { val: "chariot",      lbl: "Chariots" },
-    { val: "groupeMoteur", lbl: "Groupes moteurs" },
-    { val: "sortie",       lbl: "Sorties" }
-  ];
-
-  // Normaliser typeEquipement en tableau
-  if (!Array.isArray(form.typeEquipements)) {
-    form.typeEquipements = form.typeEquipement ? [form.typeEquipement] : ["injecteur"];
-  }
-
-  const typesWrap = document.createElement("div");
-  typesWrap.style.cssText = "display:flex;flex-direction:column;gap:6px;padding:10px 12px;background:var(--surface-soft);border:1px solid var(--border);border-radius:10px;";
-
-  // Cases à cocher pour les types standards
-  const cbsWrap = document.createElement("div");
-  cbsWrap.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;";
-  typesStandards.forEach(({ val, lbl }) => {
-    const label = document.createElement("label");
-    label.style.cssText = "display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text);cursor:pointer;";
-    const cb = document.createElement("input");
-    cb.type = "checkbox";
-    cb.checked = form.typeEquipements.includes(val);
-    cb.onchange = () => {
-      if (cb.checked) {
-        if (!form.typeEquipements.includes(val)) form.typeEquipements.push(val);
-      } else {
-        form.typeEquipements = form.typeEquipements.filter((t) => t !== val);
-      }
-      // Garder typeEquipement pour compatibilité
-      form.typeEquipement = form.typeEquipements[0] || "injecteur";
-    };
-    label.appendChild(cb);
-    label.appendChild(document.createTextNode(" " + lbl));
-    cbsWrap.appendChild(label);
+  const typeSelect = document.createElement("select");
+  typeSelect.className = "model-input";
+  [["injecteur","Injecteurs"],["chariot","Chariots"],["groupeMoteur","Groupes moteurs"],["sortie","Sorties"],["convoyeur","Convoyeurs"]].forEach(([val,lbl]) => {
+    const opt = document.createElement("option");
+    opt.value = val; opt.textContent = lbl; opt.selected = form.typeEquipement === val;
+    typeSelect.appendChild(opt);
   });
-  typesWrap.appendChild(cbsWrap);
-
-  // Séparateur
-  const sep = document.createElement("div");
-  sep.style.cssText = "font-size:11px;color:var(--text-muted);margin-top:4px;";
-  sep.textContent = "Ou ajouter un type personnalisé :";
-  typesWrap.appendChild(sep);
-
-  // Types personnalisés existants
-  const customTypes = form.typeEquipements.filter(
-    (t) => !typesStandards.map((s) => s.val).includes(t)
-  );
-
-  const customWrap = document.createElement("div");
-  customWrap.style.cssText = "display:flex;flex-direction:column;gap:5px;";
-
-  function renderCustomTypes() {
-    customWrap.innerHTML = "";
-    const currentCustom = form.typeEquipements.filter(
-      (t) => !typesStandards.map((s) => s.val).includes(t)
-    );
-    currentCustom.forEach((t, idx) => {
-      const row = document.createElement("div");
-      row.style.cssText = "display:flex;gap:6px;align-items:center;";
-      const inp = document.createElement("input");
-      inp.type = "text"; inp.className = "model-input"; inp.value = t;
-      inp.oninput = () => {
-        const allCustom = form.typeEquipements.filter(
-          (x) => !typesStandards.map((s) => s.val).includes(x)
-        );
-        const stdTypes = form.typeEquipements.filter(
-          (x) => typesStandards.map((s) => s.val).includes(x)
-        );
-        allCustom[idx] = inp.value;
-        form.typeEquipements = [...stdTypes, ...allCustom.filter((x) => x)];
-        form.typeEquipement = form.typeEquipements[0] || "injecteur";
-      };
-      const btnDel = document.createElement("button");
-      btnDel.type = "button"; btnDel.className = "model-delete-button"; btnDel.textContent = "X";
-      btnDel.style.cssText = "min-height:30px;padding:0 8px;font-size:11px;";
-      btnDel.onclick = () => {
-        form.typeEquipements = form.typeEquipements.filter((x) => x !== t);
-        form.typeEquipement = form.typeEquipements[0] || "injecteur";
-        renderCustomTypes();
-      };
-      row.appendChild(inp); row.appendChild(btnDel);
-      customWrap.appendChild(row);
-    });
-  }
-  renderCustomTypes();
-  typesWrap.appendChild(customWrap);
-
-  const btnAddCustom = document.createElement("button");
-  btnAddCustom.type = "button"; btnAddCustom.className = "model-add-button";
-  btnAddCustom.style.cssText = "padding:5px 10px;font-size:11px;margin-top:4px;";
-  btnAddCustom.textContent = "+ Ajouter un type personnalisé";
-  btnAddCustom.onclick = () => {
-    if (!form.typeEquipements) form.typeEquipements = [];
-    form.typeEquipements.push("Nouveau type");
-    form.typeEquipement = form.typeEquipements[0] || "injecteur";
-    renderCustomTypes();
-  };
-  typesWrap.appendChild(btnAddCustom);
-
-  card.appendChild(typesWrap);
+  typeSelect.onchange = () => { form.typeEquipement = typeSelect.value; };
+  card.appendChild(typeSelect);
 
   const secTitle = document.createElement("h2");
   secTitle.textContent = "Sections";
@@ -969,4 +875,36 @@ function buildSectionEditor(form, sec, idx, onUpdate) {
   }
 
   return wrap;
+}
+
+
+/* ====================================================
+   ADMIN CONVOYEURS
+==================================================== */
+
+function renderAdminConvoyeursView() {
+  clearView();
+  appView.appendChild(createBackButton());
+
+  const card = document.createElement("div");
+  card.className = "model-card";
+
+  const h2 = document.createElement("h2");
+  h2.textContent = "Modèle Convoyeurs";
+  card.appendChild(h2);
+
+  const p = document.createElement("p");
+  p.style.color = "var(--text-muted)";
+  p.style.fontSize = "12px";
+  p.textContent = "Définissez ici les pièces communes à tous les convoyeurs. Chaque portion utilisera ce modèle.";
+  card.appendChild(p);
+
+  if (!Array.isArray(MODELE_CONVOYEUR)) MODELE_CONVOYEUR = [];
+
+  renderModelRows(MODELE_CONVOYEUR, card, () => {
+    saveAll();
+    renderCurrentState();
+  });
+
+  appView.appendChild(card);
 }

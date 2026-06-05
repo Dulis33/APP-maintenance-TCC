@@ -276,13 +276,11 @@ function buildPlanCard(plan, etat) {
     if (eq.type === "chariot" && Array.isArray(eq.ids)) {
       equipParts.push(`Chariot ${eq.ids.join(", ")}`);
     } else if (eq.type === "groupeMoteur" && Array.isArray(eq.ids)) {
-      equipParts.push(`GM ${eq.ids.map((i) => typeof getGroupeMoteurRange === "function" ? getGroupeMoteurRange(i) : i).join(", ")}`);
+      equipParts.push(`GM ${eq.ids.map((i) => getGroupeMoteurRange ? getGroupeMoteurRange(i) : i).join(", ")}`);
     } else if (eq.type === "sortie" && Array.isArray(eq.ids)) {
       equipParts.push(`Sortie ${eq.ids.join(", ")}`);
     } else if (eq.type === "injecteur") {
       equipParts.push(`Injecteur ${eq.injecteurId}`);
-    } else if (eq.type === "custom" && eq.label) {
-      equipParts.push(eq.label);
     }
   });
   equipEl.textContent = [...new Set(equipParts)].join(" • ") || "—";

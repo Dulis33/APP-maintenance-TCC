@@ -174,6 +174,27 @@ function getSortieKey(sortieNumber) {
   return `sortie_${sortieNumber}`;
 }
 
+function getConvoyeurKey(convoyeurNumber) {
+  return `convoyeur_${convoyeurNumber}`;
+}
+
+function getConvoyeurLabel(convoyeurNumber) {
+  if (typeof CONVOYEUR_LABELS !== "undefined" && CONVOYEUR_LABELS[convoyeurNumber]) {
+    return CONVOYEUR_LABELS[convoyeurNumber];
+  }
+  return `Portion ${convoyeurNumber}`;
+}
+
+function getConvoyeurState(convoyeurNumber) {
+  const key = getConvoyeurKey(convoyeurNumber);
+  const stateItem = ensureElementCommentState(COMMENTS_CONVOYEURS, key);
+  const rows = DATA_CONVOYEURS[key] || [];
+  if (rows.some((r) => r?.critique === true)) return "critical";
+  if (rows.some((r) => r?.aPrevoir === true)) return "warning";
+  if (stateItem?.controlePreventif === true) return "preventif";
+  return "ok";
+}
+
 function getCellulesForChariot(chariotNumber) {
   const cell1 = (chariotNumber - 1) * 2;
   return [cell1, cell1 + 1];

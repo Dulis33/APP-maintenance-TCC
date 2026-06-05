@@ -28,6 +28,9 @@ const CONFIG_APP = Object.freeze({
   SORTIE_MIN: 39,
   SORTIE_MAX: 51,
 
+  CONVOYEUR_MIN: 1,
+  CONVOYEUR_MAX: 10,  // Sera mis à jour quand les portions seront définies
+
   CELLULE_MIN: 0,
   CELLULE_MAX: 309,
 
@@ -52,6 +55,24 @@ const SORTIE_LABELS = Object.freeze({
   49: "TB ST 4901",
   50: "TB ST 5001",
   51: "TB ST 5101"
+});
+
+/* =========================
+   CONVOYEURS — PORTIONS
+   (Noms provisoires — à mettre à jour)
+========================= */
+
+const CONVOYEUR_LABELS = Object.freeze({
+  1:  "Portion 1",
+  2:  "Portion 2",
+  3:  "Portion 3",
+  4:  "Portion 4",
+  5:  "Portion 5",
+  6:  "Portion 6",
+  7:  "Portion 7",
+  8:  "Portion 8",
+  9:  "Portion 9",
+  10: "Portion 10"
 });
 
 /* =========================

@@ -516,6 +516,7 @@ function buildPayload() {
     modeleCellule: MODELE_CELLULE,
     modeleChariotStandard: MODELE_CHARIOT_STANDARD,
     modeleGroupeMoteur: MODELE_GROUPE_MOTEUR,
+    modeleConvoyeur: MODELE_CONVOYEUR,
     modeleSortie: MODELE_SORTIE,
     specialChariots: SPECIAL_CHARIOTS,
 
@@ -525,12 +526,14 @@ function buildPayload() {
     dataChariots: DATA_CHARIOTS,
     dataEnergyBox: normalizedEnergyBoxData,
     dataGroupeMoteur: DATA_GROUPE_MOTEUR,
+    dataConvoyeurs: DATA_CONVOYEURS,
     dataSorties: DATA_SORTIES,
     dataInjecteurConvoyeurs: DATA_INJECTEUR_CONVOYEURS,
 
     commentsCellules: COMMENTS_CELLULES,
     commentsChariots: COMMENTS_CHARIOTS,
     commentsGroupeMoteur: COMMENTS_GROUPE_MOTEUR,
+    commentsConvoyeurs: COMMENTS_CONVOYEURS,
     commentsInjecteurs: COMMENTS_INJECTEURS,
     commentsSorties: COMMENTS_SORTIES,
 
@@ -550,21 +553,6 @@ function buildPayload() {
   };
 }
 
-function sanitizeInjecteurModelSection(source) {
-  // Pour les MODELES (piece/reference/repere) — pas de normalizeRow
-  if (!isPlainObject(source)) return { convoyeur: [], motorisation: [] };
-  return {
-    convoyeur: Array.isArray(source.convoyeur) ? source.convoyeur.map((row) => {
-      if (!row || typeof row !== "object") return row;
-      return { piece: row.piece || "", reference: row.reference || "", repere: row.repere || "" };
-    }) : [],
-    motorisation: Array.isArray(source.motorisation) ? source.motorisation.map((row) => {
-      if (!row || typeof row !== "object") return row;
-      return { piece: row.piece || "", reference: row.reference || "", repere: row.repere || "" };
-    }) : []
-  };
-}
-
 function applyInjecteurModels(sourceRoot) {
   const injecteurIds = getInjecteurIds();
 
@@ -576,7 +564,7 @@ function applyInjecteurModels(sourceRoot) {
 
   injecteurIds.forEach((inj) => {
     INJECTEUR_CONVOYEURS.forEach((conv) => {
-      MODELE_INJECTEUR_CONVOYEURS[inj][conv.key] = sanitizeInjecteurModelSection(
+      MODELE_INJECTEUR_CONVOYEURS[inj][conv.key] = sanitizeInjecteurSection(
         sourceRoot?.[inj]?.[conv.key]
       );
     });
@@ -645,6 +633,7 @@ function applyLoadedData(data) {
   clearObject(DATA_CHARIOTS);
   clearObject(DATA_ENERGYBOX);
   clearObject(DATA_GROUPE_MOTEUR);
+  clearObject(DATA_CONVOYEURS);
   clearObject(DATA_SORTIES);
 
   if (isPlainObject(data.dataCellules)) {
@@ -673,6 +662,11 @@ function applyLoadedData(data) {
     normalizeStoreRows(DATA_GROUPE_MOTEUR, typeof normalizeRow === "function" ? normalizeRow : null);
   }
 
+  if (isPlainObject(data.dataConvoyeurs)) {
+    Object.assign(DATA_CONVOYEURS, data.dataConvoyeurs);
+    normalizeStoreRows(DATA_CONVOYEURS, typeof normalizeRow === "function" ? normalizeRow : null);
+  }
+
   if (isPlainObject(data.dataSorties)) {
     Object.assign(DATA_SORTIES, data.dataSorties);
     normalizeStoreRows(DATA_SORTIES, typeof normalizeRow === "function" ? normalizeRow : null);
@@ -689,6 +683,7 @@ function applyLoadedData(data) {
   clearObject(COMMENTS_CELLULES);
   clearObject(COMMENTS_CHARIOTS);
   clearObject(COMMENTS_GROUPE_MOTEUR);
+  clearObject(COMMENTS_CONVOYEURS);
   clearObject(COMMENTS_INJECTEURS);
   clearObject(COMMENTS_SORTIES);
 
@@ -702,6 +697,9 @@ function applyLoadedData(data) {
 
   if (isPlainObject(data.commentsGroupeMoteur)) {
     Object.assign(COMMENTS_GROUPE_MOTEUR, data.commentsGroupeMoteur);
+  }
+  if (isPlainObject(data.commentsConvoyeurs)) {
+    Object.assign(COMMENTS_CONVOYEURS, data.commentsConvoyeurs);
   }
 
   if (isPlainObject(data.commentsInjecteurs)) {

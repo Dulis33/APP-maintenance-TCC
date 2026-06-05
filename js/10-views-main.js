@@ -192,7 +192,7 @@ function getHomeDetailFamilleFilters() {
   if (typeof getInterventionDetailedFamilleFilters === "function") {
     return getInterventionDetailedFamilleFilters();
   }
-  return ["cellule", "chariot", "groupeMoteur", "energybox", "injecteur", "sortie", "manuel"];
+  return ["cellule", "chariot", "groupeMoteur", "energybox", "injecteur", "sortie", "convoyeur", "manuel"];
 }
 
 function createCountersFromInterventionRows(rows = []) {
@@ -282,6 +282,10 @@ function buildHomeDetailFamilyCounters() {
   // Sorties : avec plans échus
   result.sortie = safeCount(
     typeof countAllSortiesCountersWithPlans === "function" ? countAllSortiesCountersWithPlans : null
+  );
+
+  result.convoyeur = safeCount(
+    typeof countAllConvoyeursCountersWithPlans === "function" ? countAllConvoyeursCountersWithPlans : null
   );
 
   // Sécurité : on complète avec les lignes collectées du détail des anomalies.
@@ -527,6 +531,12 @@ function getHomeDashboardFamilyConfigs() {
       label: "État sorties",
       filters: ["sortie"],
       type: "equipement"
+    },
+    {
+      key: "convoyeur",
+      label: "État convoyeurs",
+      filters: ["convoyeur"],
+      type: "equipement"
     }
   ];
 }
@@ -754,6 +764,12 @@ function createHomeDetailFamiliesBlock() {
       label: "Sorties",
       subtext: "Sorties TCC",
       filters: ["sortie"]
+    },
+    {
+      key: "convoyeur",
+      label: "Convoyeurs",
+      subtext: "Portions de convoyage",
+      filters: ["convoyeur"]
     },
     {
       key: "manuel",

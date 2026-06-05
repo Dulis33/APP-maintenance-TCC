@@ -113,31 +113,19 @@ function countCommentEntries(store, key, options = {}) {
     ? rows.slice(1).filter((item) => !isSystemFollowUpCommentRow(item))
     : [];
 
-  // Les lignes d'en-tête des commentaires servaient avant à porter des états
-  // globaux cachés. Depuis l'arrivée des préventifs planifiés, ces anciens
-  // drapeaux ne doivent plus alimenter les pastilles des équipements standards
-  // (chariots, groupes moteurs, sorties, injecteurs), sinon une pastille peut
-  // rester visible alors qu'aucune case n'est cochée dans le tableau.
-  // Pour les cellules, on garde la compatibilité via includeCelluleStates.
-  const rowsWithVisibleContent = visibleRows.filter((item) => hasAnyCommentText(item));
-  const rowsForHiddenFlags = includeCelluleStates ? visibleRows : rowsWithVisibleContent;
-  const allowHeaderStateFlags = includeCelluleStates === true;
-
   const hasCritical =
-    (allowHeaderStateFlags && !!headerRow?.critique) ||
-    rowsForHiddenFlags.some((item) => item?.critique === true);
+    !!headerRow?.critique || visibleRows.some((item) => item?.critique === true);
 
   const hasWarning =
-    (allowHeaderStateFlags && !!headerRow?.aPrevoir) ||
-    rowsForHiddenFlags.some((item) => item?.aPrevoir === true);
+    !!headerRow?.aPrevoir || visibleRows.some((item) => item?.aPrevoir === true);
 
   const hasControl = includeCelluleStates
     ? !!headerRow?.aControler || visibleRows.some((item) => item?.aControler === true)
     : false;
 
-  const hasPreventif = includeCelluleStates
-    ? !!headerRow?.controlePreventif || visibleRows.some((item) => item?.controlePreventif === true)
-    : rowsForHiddenFlags.some((item) => item?.controlePreventif === true);
+  const hasPreventif =
+    !!headerRow?.controlePreventif ||
+    visibleRows.some((item) => item?.controlePreventif === true);
 
   const hasComments = false;
 
@@ -441,6 +429,9 @@ function countTccCounters() {
   total = addCounters(total, countTrieurCountersWithPlans());
   total = addCounters(total, countAllInjecteursCountersWithPlans());
   total = addCounters(total, countAllSortiesCountersWithPlans());
+  if (typeof countAllConvoyeursCountersWithPlans === "function") {
+    total = addCounters(total, countAllConvoyeursCountersWithPlans());
+  }
   return total;
 }
 
@@ -761,4 +752,47 @@ function countTrieurCountersWithPlans() {
   const nCh = countPlansEchusByType("chariot");
   if (nGM + nCh > 0) total = addCounters(total, normalizeCountersObject({ controlePreventif: nGM + nCh }));
   return total;
+}
+
+/* ====================================================
+   COMPTEURS CONVOYEURS
+==================================================== */
+
+function countConvoyeurCounters(convoyeurNumber) {
+  const key = typeof getConvoyeurKey === "function" ? getConvoyeurKey(convoyeurNumber) : `convoyeur_${convoyeurNumber}`;
+  const model = typeof MODELE_CONVOYEUR !== "undefined" ? MODELE_CONVOYEUR : [];
+  return countModelRowsAndComments(
+    DATA_CONVOYEURS,
+    COMMENTS_CONVOYEURS,
+    key,
+    model
+  );
+}
+
+function countAllConvoyeursCounters() {
+  let total = createEmptyCounters();
+  const min = typeof CONFIG_APP !== "undefined" ? CONFIG_APP.CONVOYEUR_MIN : 1;
+  const max = typeof CONFIG_APP !== "undefined" ? CONFIG_APP.CONVOYEUR_MAX : 10;
+  for (let i = min; i <= max; i++) {
+    total = addCounters(total, countConvoyeurCounters(i));
+  }
+  return total;
+}
+
+function countConvoyeurCountersWithPlans(convoyeurNumber) {
+  return addPlanEchuToCounters(
+    countConvoyeurCounters(convoyeurNumber),
+    "convoyeur", convoyeurNumber
+  );
+}
+
+function countAllConvoyeursCountersWithPlans() {
+  let total = countAllConvoyeursCounters();
+  const n = typeof countPlansEchusByType === "function" ? countPlansEchusByType("convoyeur") : 0;
+  if (n > 0) total = addCounters(total, normalizeCountersObject({ controlePreventif: n }));
+  return total;
+}
+
+function getConvoyeurButtonClasses(convoyeurNumber) {
+  return getButtonStateClassFromCounters(countConvoyeurCountersWithPlans(convoyeurNumber));
 }

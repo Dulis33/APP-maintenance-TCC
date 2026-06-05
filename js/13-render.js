@@ -108,6 +108,10 @@ function renderCurrentState() {
       if (typeof renderConvoyeursView === "function") renderConvoyeursView();
       break;
 
+    case "convoyeurDetail":
+      if (typeof renderConvoyeurDetailView === "function") renderConvoyeurDetailView(stateData.convoyeurNumber);
+      break;
+
     case "trieur":
       renderTrieurView();
       break;
@@ -233,6 +237,10 @@ case "chariotPieces":
 
     case "calendrierPreventifs":
       if (typeof renderCalendrierPreventifs === "function") renderCalendrierPreventifs();
+      break;
+
+    case "adminConvoyeurs":
+      if (typeof renderAdminConvoyeursView === "function") renderAdminConvoyeursView();
       break;
 
     case "adminFormulaires":

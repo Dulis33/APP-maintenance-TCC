@@ -439,6 +439,23 @@ function validerFormulaire(plan, modele, reponses, equipLabel) {
 
 /* Créer une anomalie dans les commentaires de l'équipement */
 function addAnomalieComment(eq, texte, typeAnomalie, date) {
+  // Équipement personnalisé → problématique globale
+  if (eq.type === "custom") {
+    try {
+      if (typeof GLOBAL_PROBLEMS !== "undefined") {
+        GLOBAL_PROBLEMS.push({
+          id: "prob_" + Date.now() + "_" + Math.random().toString(36).substr(2,4),
+          date: date,
+          constat: (eq.label ? "[" + eq.label + "] " : "") + texte,
+          etat: typeAnomalie === "critique" ? "critique" : "aPrevoir",
+          statut: "ouvert",
+          equipement: eq.label || "Équipement personnalisé"
+        });
+      }
+    } catch(e) {}
+    return;
+  }
+
   let store = null;
   let key = null;
 
@@ -457,17 +474,6 @@ function addAnomalieComment(eq, texte, typeAnomalie, date) {
     if (store && typeof getInjecteurConvoyeurHeaderCommentKey === "function" && convKey) {
       key = getInjecteurConvoyeurHeaderCommentKey(eq.injecteurId, convKey);
     }
-  } else if (eq.type === "custom") {
-    // Équipement personnalisé → crée une problématique globale
-    if (typeof GLOBAL_PROBLEMS !== "undefined" && typeof createEmptyGlobalProblem === "function") {
-      const prob = createEmptyGlobalProblem();
-      prob.titre = `[${eq.label || "Équipement custom"}] ${texte}`;
-      prob.description = `Anomalie détectée le ${date} — ${typeAnomalie === "critique" ? "CRITIQUE" : "À prévoir"}`;
-      prob.critique = typeAnomalie === "critique";
-      prob.dateOuverture = date;
-      GLOBAL_PROBLEMS.push(prob);
-    }
-    return;
   }
 
   if (!store || !key) return;
@@ -627,4 +633,52 @@ function printFormulaire(plan, modele, equipLabel) {
   w.document.close();
   w.focus();
   setTimeout(() => { w.print(); }, 400);
+}
+
+/* ====================================================
+   INTÉGRATION FORMULAIRE DANS LE BLOC ÉQUIPEMENT
+==================================================== */
+
+const _origCreatePlansPreventifBlockForms = typeof createPlansPreventifBlock === "function"
+  ? createPlansPreventifBlock : null;
+
+function createPlansPreventifBlock(type, id, convoyeurKey, tableauType) {
+  const base = typeof createPlansPreventifBlockBase === "function"
+    ? createPlansPreventifBlockBase(type, id, convoyeurKey, tableauType)
+    : (_origCreatePlansPreventifBlockForms
+        ? _origCreatePlansPreventifBlockForms(type, id, convoyeurKey, tableauType)
+        : null);
+
+  if (!base) return null;
+
+  const plansAvecFormulaire = (DATA_PLANS_PREVENTIFS || []).filter((plan) => {
+    if (!plan || plan.statut !== "actif" || !plan.formulaireId) return false;
+    if (typeof isPlanEchu !== "function" || !isPlanEchu(plan)) return false;
+    return (plan.equipements || []).some((eq) => {
+      if (eq.type !== type) return false;
+      if (type === "injecteur") {
+        const eqId = typeof eq.injecteurId === "string" ? parseInt(eq.injecteurId, 10) : eq.injecteurId;
+        const curId = typeof id === "string" ? parseInt(id, 10) : id;
+        return eqId === curId && (!convoyeurKey || eq.convoyeurKey === convoyeurKey);
+      }
+      const curId = typeof id === "string" ? parseInt(id, 10) : id;
+      return Array.isArray(eq.ids) && eq.ids.some((i) =>
+        (typeof i === "string" ? parseInt(i, 10) : i) === curId
+      );
+    });
+  });
+
+  const typeLabels = { chariot: "Chariot", groupeMoteur: "Groupe moteur", injecteur: "Injecteur", sortie: "Sortie" };
+  const equipLabel = type === "custom"
+    ? (id || "Équipement personnalisé")
+    : (typeLabels[type] || type) + " " + id;
+
+  plansAvecFormulaire.forEach((plan) => {
+    const formBlock = typeof createFormulaireBlock === "function"
+      ? createFormulaireBlock(plan, equipLabel)
+      : null;
+    if (formBlock) base.appendChild(formBlock);
+  });
+
+  return base;
 }

@@ -203,20 +203,64 @@ function renderConvoyeursView() {
   clearView();
   appView.appendChild(createBackButton());
 
-  const card = document.createElement("div");
-  card.className = "data-card";
+  const grid = createViewGrid();
+  const min = CONFIG_APP.CONVOYEUR_MIN;
+  const max = CONFIG_APP.CONVOYEUR_MAX;
 
-  const title = document.createElement("h2");
-  title.textContent = "Convoyeurs";
-  card.appendChild(title);
+  for (let i = min; i <= max; i++) {
+    const num = i;
+    const label = typeof getConvoyeurLabel === "function" ? getConvoyeurLabel(num) : `Portion ${num}`;
+    grid.appendChild(
+      createButton(
+        `Convoyeur ${num}`,
+        () => setState("convoyeurDetail", { convoyeurNumber: num }),
+        "medium",
+        getConvoyeurButtonClasses(num),
+        countConvoyeurCountersWithPlans(num),
+        label
+      )
+    );
+  }
 
-  const info = document.createElement("p");
-  info.style.color = "var(--text-muted)";
-  info.style.fontSize = "13px";
-  info.textContent = "Section en cours de configuration. Utilisez la planification préventive pour programmer des rondes sur vos convoyeurs.";
-  card.appendChild(info);
+  appView.appendChild(grid);
+}
+
+function renderConvoyeurDetailView(convoyeurNumber) {
+  clearView();
+  appView.appendChild(createBackButton());
+
+  const key = getConvoyeurKey(convoyeurNumber);
+  const label = getConvoyeurLabel(convoyeurNumber);
+
+  const card = createDataCard(`Convoyeur ${convoyeurNumber}`, label);
+
+  // Bouton contrôle préventif (standard)
+  card.appendChild(
+    createStandardHeaderControl(
+      `Convoyeur ${convoyeurNumber}`,
+      COMMENTS_CONVOYEURS,
+      key,
+      { type: "convoyeur", id: convoyeurNumber }
+    )
+  );
+
+  // Tableau de pièces
+  const safeModel = Array.isArray(MODELE_CONVOYEUR) ? MODELE_CONVOYEUR : [];
+  ensureLocalRows(DATA_CONVOYEURS, key, safeModel);
+  card.appendChild(
+    createTable(MODELE_CONVOYEUR, DATA_CONVOYEURS, key)
+  );
 
   appView.appendChild(card);
+
+  // Commentaires
+  appView.appendChild(
+    createCommentsCard(
+      `Commentaires du convoyeur ${convoyeurNumber}`,
+      COMMENTS_CONVOYEURS,
+      key
+    )
+  );
 }
 
 function renderTrieurView() {
