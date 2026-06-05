@@ -1167,12 +1167,12 @@ function renderSuiviHubView() {
 
   appView.appendChild(
     createButton(
-      "TCC",
+      "Plate-forme TCC",
       () => setState("tcc"),
       "big",
       "primary",
       tccCounters,
-      "Trieur • Injecteurs • Sorties"
+      "Trieur • Injecteurs • Sorties • Convoyeurs"
     )
   );
 

@@ -104,6 +104,10 @@ function renderCurrentState() {
       renderTccView();
       break;
 
+    case "convoyeurs":
+      if (typeof renderConvoyeursView === "function") renderConvoyeursView();
+      break;
+
     case "trieur":
       renderTrieurView();
       break;

@@ -186,6 +186,37 @@ function renderTccView() {
       "39 à 51"
     )
   );
+
+  appView.appendChild(
+    createButton(
+      "Convoyeurs",
+      () => setState("convoyeurs"),
+      "big",
+      "primary",
+      null,
+      "Convoyeurs indépendants"
+    )
+  );
+}
+
+function renderConvoyeursView() {
+  clearView();
+  appView.appendChild(createBackButton());
+
+  const card = document.createElement("div");
+  card.className = "data-card";
+
+  const title = document.createElement("h2");
+  title.textContent = "Convoyeurs";
+  card.appendChild(title);
+
+  const info = document.createElement("p");
+  info.style.color = "var(--text-muted)";
+  info.style.fontSize = "13px";
+  info.textContent = "Section en cours de configuration. Utilisez la planification préventive pour programmer des rondes sur vos convoyeurs.";
+  card.appendChild(info);
+
+  appView.appendChild(card);
 }
 
 function renderTrieurView() {
