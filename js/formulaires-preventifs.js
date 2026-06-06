@@ -635,50 +635,5 @@ function printFormulaire(plan, modele, equipLabel) {
   setTimeout(() => { w.print(); }, 400);
 }
 
-/* ====================================================
-   INTÉGRATION FORMULAIRE DANS LE BLOC ÉQUIPEMENT
-==================================================== */
-
-const _origCreatePlansPreventifBlockForms = typeof createPlansPreventifBlock === "function"
-  ? createPlansPreventifBlock : null;
-
-function createPlansPreventifBlock(type, id, convoyeurKey, tableauType) {
-  const base = typeof createPlansPreventifBlockBase === "function"
-    ? createPlansPreventifBlockBase(type, id, convoyeurKey, tableauType)
-    : (_origCreatePlansPreventifBlockForms
-        ? _origCreatePlansPreventifBlockForms(type, id, convoyeurKey, tableauType)
-        : null);
-
-  if (!base) return null;
-
-  const plansAvecFormulaire = (DATA_PLANS_PREVENTIFS || []).filter((plan) => {
-    if (!plan || plan.statut !== "actif" || !plan.formulaireId) return false;
-    if (typeof isPlanEchu !== "function" || !isPlanEchu(plan)) return false;
-    return (plan.equipements || []).some((eq) => {
-      if (eq.type !== type) return false;
-      if (type === "injecteur") {
-        const eqId = typeof eq.injecteurId === "string" ? parseInt(eq.injecteurId, 10) : eq.injecteurId;
-        const curId = typeof id === "string" ? parseInt(id, 10) : id;
-        return eqId === curId && (!convoyeurKey || eq.convoyeurKey === convoyeurKey);
-      }
-      const curId = typeof id === "string" ? parseInt(id, 10) : id;
-      return Array.isArray(eq.ids) && eq.ids.some((i) =>
-        (typeof i === "string" ? parseInt(i, 10) : i) === curId
-      );
-    });
-  });
-
-  const typeLabels = { chariot: "Chariot", groupeMoteur: "Groupe moteur", injecteur: "Injecteur", sortie: "Sortie" };
-  const equipLabel = type === "custom"
-    ? (id || "Équipement personnalisé")
-    : (typeLabels[type] || type) + " " + id;
-
-  plansAvecFormulaire.forEach((plan) => {
-    const formBlock = typeof createFormulaireBlock === "function"
-      ? createFormulaireBlock(plan, equipLabel)
-      : null;
-    if (formBlock) base.appendChild(formBlock);
-  });
-
-  return base;
-}
+/* Le formulaire est maintenant intégré directement dans createPlansPreventifBlockBase
+   dans planification.js — plus besoin d'override ici */

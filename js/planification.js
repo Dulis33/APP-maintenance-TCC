@@ -134,7 +134,6 @@ function openPlanificationPopup(preselect = {}) {
       opt.textContent = f.nom + " (" + (f.typeEquipement === "injecteur" ? "Injecteurs"
         : f.typeEquipement === "chariot" ? "Chariots"
         : f.typeEquipement === "groupeMoteur" ? "Groupes moteurs"
-        : f.typeEquipement === "convoyeur" ? "Convoyeurs"
         : "Sorties") + ")";
       opt.selected = preselect.formulaireId === f.id;
       formSelect.appendChild(opt);
@@ -153,11 +152,10 @@ function openPlanificationPopup(preselect = {}) {
   equipLabel.textContent = "Équipements concernés";
 
   const equipTypes = [
-    { id: "chariot",      label: "🚃 Chariots",           icon: "🚃" },
-    { id: "groupeMoteur", label: "⚙️ Groupes moteurs",     icon: "⚙️" },
-    { id: "injecteur",    label: "📦 Injecteurs",          icon: "📦" },
-    { id: "sortie",       label: "🚪 Sorties",             icon: "🚪" },
-    { id: "convoyeur",    label: "🔗 Convoyeurs",          icon: "🔗" }
+    { id: "chariot",      label: "🚃 Chariots",       icon: "🚃" },
+    { id: "groupeMoteur", label: "⚙️ Groupes moteurs", icon: "⚙️" },
+    { id: "injecteur",    label: "📦 Injecteurs",      icon: "📦" },
+    { id: "sortie",       label: "🚪 Sorties",         icon: "🚪" }
   ];
 
   // Tous les panneaux visibles simultanément, pliables
@@ -262,25 +260,6 @@ function openPlanificationPopup(preselect = {}) {
         grid.appendChild(mkToggle(lbl, sel.sortie.has(num), (btn) => {
           sel.sortie.has(num) ? sel.sortie.delete(num) : sel.sortie.add(num);
           btn.className = sel.sortie.has(num) ? "planif-select-btn active" : "planif-select-btn";
-        }));
-      }
-      panel.appendChild(grid);
-
-    } else if (type === "convoyeur") {
-      const qr = document.createElement("div"); qr.className = "planif-quick-row";
-      const bAll = document.createElement("button"); bAll.type="button"; bAll.className="planif-quick-btn"; bAll.textContent="Tous";
-      bAll.onclick = () => { for (let i=CONFIG_APP.CONVOYEUR_MIN;i<=CONFIG_APP.CONVOYEUR_MAX;i++) sel.convoyeur.add(i); panel.replaceWith(buildPanel("convoyeur")); updateSummary(); };
-      const bClr = document.createElement("button"); bClr.type="button"; bClr.className="planif-quick-btn planif-quick-reset"; bClr.textContent="Effacer";
-      bClr.onclick = () => { sel.convoyeur.clear(); panel.replaceWith(buildPanel("convoyeur")); updateSummary(); };
-      qr.appendChild(bAll); qr.appendChild(bClr); panel.appendChild(qr);
-      const grid = document.createElement("div"); grid.className = "planif-grid-small";
-      const min = CONFIG_APP.CONVOYEUR_MIN; const max = CONFIG_APP.CONVOYEUR_MAX;
-      for (let i=min;i<=max;i++) {
-        const num=i;
-        const lbl = typeof getConvoyeurLabel === "function" ? getConvoyeurLabel(num) : `Portion ${num}`;
-        grid.appendChild(mkToggle(`${num} — ${lbl}`, sel.convoyeur.has(num), (btn) => {
-          sel.convoyeur.has(num) ? sel.convoyeur.delete(num) : sel.convoyeur.add(num);
-          btn.className = sel.convoyeur.has(num) ? "planif-select-btn active" : "planif-select-btn";
         }));
       }
       panel.appendChild(grid);
@@ -432,7 +411,6 @@ function openPlanificationPopup(preselect = {}) {
       chariot:      sel.chariot.size,
       groupeMoteur: sel.groupeMoteur.size,
       sortie:       sel.sortie.size,
-      convoyeur:    sel.convoyeur.size,
       injecteur:    new Set(sel.injecteurItems.map((x) => x.injecteurId)).size
     };
     Object.keys(counts).forEach((id) => {
@@ -577,46 +555,70 @@ function createPlansPreventifBlockBase(type, id, convoyeurKey, tableauType) {
       card.appendChild(cardHist);
     }
 
-    // Bouton valider rapide : uniquement pour les préventifs sans formulaire.
-    // Les préventifs avec formulaire se valident depuis le formulaire complet affiché juste dessous.
-    if (echu && !plan.formulaireId) {
-      const validateRow = document.createElement("div");
-      validateRow.className = "planif-plan-validate-row";
-
-      const valDateInput = document.createElement("input");
-      valDateInput.type = "date";
-      valDateInput.className = "date-input";
-      valDateInput.value = getTodayDateString();
-
-      const valBtn = document.createElement("button");
-      valBtn.type = "button";
-      valBtn.className = "parts-action-btn parts-preventif-done-btn";
-      valBtn.textContent = "✓ Réalisé";
-      valBtn.onclick = (e) => {
-        e.preventDefault();
-        const dateVal = valDateInput.value || getTodayDateString();
-
-        // Enregistrer la réalisation
-        plan.historiqueRealisations.push({
-          date: dateVal,
-          planifieDate: plan.prochaineEcheance
-        });
-
-        // Calculer prochaine échéance
-        if (plan.recurrence === "ponctuel") {
-          plan.statut = "terminé";
-        } else {
-          const next = calcProchaineDateEcheance(dateVal, plan.recurrence);
-          plan.prochaineEcheance = next || plan.prochaineEcheance;
+    if (echu) {
+      if (plan.formulaireId) {
+        // Plan avec formulaire → afficher le formulaire complet (remplissage + impression + validation)
+        const typeLabels = { chariot: "Chariot", groupeMoteur: "Groupe moteur", injecteur: "Injecteur", sortie: "Sortie", convoyeur: "Convoyeur" };
+        const equipLabel = type === "custom" ? (String(id)) : (typeLabels[type] || type) + " " + id;
+        const formBlock = typeof createFormulaireBlock === "function"
+          ? createFormulaireBlock(plan, equipLabel)
+          : null;
+        if (formBlock) {
+          // Retirer le titre du formBlock (déjà dans la carte)
+          card.appendChild(formBlock);
         }
+      } else {
+        // Plan sans formulaire → bouton simple "Réalisé"
+        const validateRow = document.createElement("div");
+        validateRow.className = "planif-plan-validate-row";
 
-        saveAll();
-        renderCurrentState();
+        const valDateInput = document.createElement("input");
+        valDateInput.type = "date";
+        valDateInput.className = "date-input";
+        valDateInput.value = getTodayDateString();
+
+        const valBtn = document.createElement("button");
+        valBtn.type = "button";
+        valBtn.className = "parts-action-btn parts-preventif-done-btn";
+        valBtn.textContent = "✓ Réalisé";
+        valBtn.onclick = (e) => {
+          e.preventDefault();
+          const dateVal = valDateInput.value || getTodayDateString();
+          plan.historiqueRealisations.push({
+            date: dateVal,
+            planifieDate: plan.prochaineEcheance
+          });
+          if (plan.recurrence === "ponctuel") {
+            plan.statut = "terminé";
+          } else {
+            const next = calcProchaineDateEcheance(dateVal, plan.recurrence);
+            plan.prochaineEcheance = next || plan.prochaineEcheance;
+          }
+          saveAll();
+          renderCurrentState();
+        };
+
+        validateRow.appendChild(valDateInput);
+        validateRow.appendChild(valBtn);
+        card.appendChild(validateRow);
+      }
+    } else if (!echu && plan.formulaireId) {
+      // Plan futur avec formulaire → bouton pour voir/préparer le formulaire
+      const previewBtn = document.createElement("button");
+      previewBtn.type = "button";
+      previewBtn.className = "back-button form-btn-print";
+      previewBtn.style.width = "100%";
+      previewBtn.style.marginTop = "6px";
+      previewBtn.textContent = "🖨 Imprimer le formulaire vierge";
+      previewBtn.onclick = (e) => {
+        e.preventDefault();
+        const modele = typeof getModeleFormulaire === "function" ? getModeleFormulaire(plan.formulaireId) : null;
+        if (!modele) return;
+        const typeLabels = { chariot: "Chariot", groupeMoteur: "Groupe moteur", injecteur: "Injecteur", sortie: "Sortie", convoyeur: "Convoyeur" };
+        const equipLabel = type === "custom" ? String(id) : (typeLabels[type] || type) + " " + id;
+        if (typeof printFormulaire === "function") printFormulaire(plan, modele, equipLabel);
       };
-
-      validateRow.appendChild(valDateInput);
-      validateRow.appendChild(valBtn);
-      card.appendChild(validateRow);
+      card.appendChild(previewBtn);
     }
 
     // Bouton supprimer (admin seulement)
@@ -642,47 +644,8 @@ function createPlansPreventifBlockBase(type, id, convoyeurKey, tableauType) {
   return block;
 }
 
-/* ====================================================
-   INTÉGRATION FORMULAIRE DANS LE BLOC ÉQUIPEMENT
-   Appelé depuis createPlansPreventifBlock
-==================================================== */
-
-// Override de createPlansPreventifBlock pour inclure les formulaires
-const _origCreatePlansPreventifBlock = createPlansPreventifBlockBase;
+/* createPlansPreventifBlock = createPlansPreventifBlockBase
+   Le formulaire est maintenant intégré directement dans la carte du plan */
 function createPlansPreventifBlock(type, id, convoyeurKey, tableauType) {
-  const block = _origCreatePlansPreventifBlock(type, id, convoyeurKey, tableauType);
-  if (!block) return null;
-
-  // Chercher les plans avec formulaire pour cet équipement
-  const plansAvecFormulaire = (DATA_PLANS_PREVENTIFS || []).filter((plan) => {
-    if (!plan || plan.statut !== "actif" || !plan.formulaireId) return false;
-    if (typeof isPlanEchu !== "function" || !isPlanEchu(plan)) return false;
-    return plan.equipements && plan.equipements.some((eq) => {
-      if (eq.type !== type) return false;
-      if (type === "injecteur") {
-        const eqId = typeof eq.injecteurId === "string" ? parseInt(eq.injecteurId, 10) : eq.injecteurId;
-        const currentId = typeof id === "string" ? parseInt(id, 10) : id;
-        return eqId === currentId
-          && (!convoyeurKey || eq.convoyeurKey === convoyeurKey)
-          && (!tableauType || eq.tableauType === tableauType);
-      }
-      const currentId = typeof id === "string" ? parseInt(id, 10) : id;
-      return Array.isArray(eq.ids) && eq.ids.some((i) => {
-        return (typeof i === "string" ? parseInt(i, 10) : i) === currentId;
-      });
-    });
-  });
-
-  // Construire le label équipement
-  const types = { chariot: "Chariot", groupeMoteur: "Groupe moteur", injecteur: "Injecteur", sortie: "Sortie", convoyeur: "Convoyeur" };
-  const equipLabel = (types[type] || type) + " " + id;
-
-  plansAvecFormulaire.forEach((plan) => {
-    const formBlock = typeof createFormulaireBlock === "function"
-      ? createFormulaireBlock(plan, equipLabel)
-      : null;
-    if (formBlock) block.appendChild(formBlock);
-  });
-
-  return block;
+  return createPlansPreventifBlockBase(type, id, convoyeurKey, tableauType);
 }
