@@ -603,22 +603,55 @@ function createPlansPreventifBlockBase(type, id, convoyeurKey, tableauType) {
         card.appendChild(validateRow);
       }
     } else if (!echu && plan.formulaireId) {
-      // Plan futur avec formulaire → bouton pour voir/préparer le formulaire
-      const previewBtn = document.createElement("button");
-      previewBtn.type = "button";
-      previewBtn.className = "back-button form-btn-print";
-      previewBtn.style.width = "100%";
-      previewBtn.style.marginTop = "6px";
-      previewBtn.textContent = "🖨 Imprimer le formulaire vierge";
-      previewBtn.onclick = (e) => {
-        e.preventDefault();
-        const modele = typeof getModeleFormulaire === "function" ? getModeleFormulaire(plan.formulaireId) : null;
-        if (!modele) return;
-        const typeLabels = { chariot: "Chariot", groupeMoteur: "Groupe moteur", injecteur: "Injecteur", sortie: "Sortie", convoyeur: "Convoyeur" };
-        const equipLabel = type === "custom" ? String(id) : (typeLabels[type] || type) + " " + id;
-        if (typeof printFormulaire === "function") printFormulaire(plan, modele, equipLabel);
-      };
-      card.appendChild(previewBtn);
+      // Plan futur avec formulaire
+      const typeLabels = { chariot: "Chariot", groupeMoteur: "Groupe moteur", injecteur: "Injecteur", sortie: "Sortie", convoyeur: "Convoyeur" };
+      const equipLabel = type === "custom" ? String(id) : (typeLabels[type] || type) + " " + id;
+      const modele = typeof getModeleFormulaire === "function" ? getModeleFormulaire(plan.formulaireId) : null;
+
+      if (modele) {
+        const btnsWrap = document.createElement("div");
+        btnsWrap.style.cssText = "display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;";
+
+        // Bouton imprimer — toujours disponible
+        const btnPrint = document.createElement("button");
+        btnPrint.type = "button";
+        btnPrint.className = "back-button form-btn-print";
+        btnPrint.style.flex = "1";
+        btnPrint.textContent = "🖨 Imprimer le formulaire";
+        btnPrint.onclick = (e) => {
+          e.preventDefault();
+          if (typeof printFormulaire === "function") printFormulaire(plan, modele, equipLabel);
+        };
+        btnsWrap.appendChild(btnPrint);
+
+        // Bouton remplir sur appli — disponible si plan proche (J+7)
+        const proche = typeof isPlanProche === "function" ? isPlanProche(plan, 7) : false;
+        if (proche) {
+          const btnFill = document.createElement("button");
+          btnFill.type = "button";
+          btnFill.className = "back-button form-btn-save";
+          btnFill.style.flex = "1";
+          btnFill.textContent = "📝 Remplir sur appli";
+          btnFill.onclick = (e) => {
+            e.preventDefault();
+            // Forcer l'affichage du formulaire en mode "anticipé"
+            plan._forcerAffichageFormulaire = true;
+            saveAll();
+            renderCurrentState();
+          };
+          btnsWrap.appendChild(btnFill);
+        }
+
+        card.appendChild(btnsWrap);
+
+        // Si forcé → afficher le formulaire complet
+        if (plan._forcerAffichageFormulaire) {
+          const formBlock = typeof createFormulaireBlock === "function"
+            ? createFormulaireBlock(plan, equipLabel)
+            : null;
+          if (formBlock) card.appendChild(formBlock);
+        }
+      }
     }
 
     // Bouton supprimer (admin seulement)

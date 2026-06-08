@@ -247,7 +247,8 @@ function createFormulaireBlock(plan, equipLabel) {
 
   // État du plan
   const echu = typeof isPlanEchu === "function" ? isPlanEchu(plan) : false;
-  if (!echu) {
+  const force = plan._forcerAffichageFormulaire === true;
+  if (!echu && !force) {
     const futur = document.createElement("div");
     futur.className = "form-futur-notice";
     futur.textContent = "Ce formulaire sera actif à partir de l'échéance.";
@@ -439,23 +440,6 @@ function validerFormulaire(plan, modele, reponses, equipLabel) {
 
 /* Créer une anomalie dans les commentaires de l'équipement */
 function addAnomalieComment(eq, texte, typeAnomalie, date) {
-  // Équipement personnalisé → problématique globale
-  if (eq.type === "custom") {
-    try {
-      if (typeof GLOBAL_PROBLEMS !== "undefined") {
-        GLOBAL_PROBLEMS.push({
-          id: "prob_" + Date.now() + "_" + Math.random().toString(36).substr(2,4),
-          date: date,
-          constat: (eq.label ? "[" + eq.label + "] " : "") + texte,
-          etat: typeAnomalie === "critique" ? "critique" : "aPrevoir",
-          statut: "ouvert",
-          equipement: eq.label || "Équipement personnalisé"
-        });
-      }
-    } catch(e) {}
-    return;
-  }
-
   let store = null;
   let key = null;
 
@@ -634,6 +618,3 @@ function printFormulaire(plan, modele, equipLabel) {
   w.focus();
   setTimeout(() => { w.print(); }, 400);
 }
-
-/* Le formulaire est maintenant intégré directement dans createPlansPreventifBlockBase
-   dans planification.js — plus besoin d'override ici */

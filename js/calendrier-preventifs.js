@@ -294,6 +294,32 @@ function buildPlanCard(plan, etat) {
     : plan.recurrence;
   card.appendChild(recEl);
 
+  // Bouton imprimer — disponible sur TOUS les plans avec formulaire
+  if (plan.formulaireId) {
+    const modele = typeof getModeleFormulaire === "function" ? getModeleFormulaire(plan.formulaireId) : null;
+    if (modele) {
+      const btnPrint = document.createElement("button");
+      btnPrint.type = "button";
+      btnPrint.className = "back-button form-btn-print";
+      btnPrint.style.cssText = "width:100%;margin-top:6px;";
+      btnPrint.textContent = "🖨 Imprimer le formulaire";
+      btnPrint.onclick = (e) => {
+        e.preventDefault();
+        // Construire un label équipement depuis le plan
+        const types = { chariot: "Chariot", groupeMoteur: "Groupe moteur", injecteur: "Injecteur", sortie: "Sortie", convoyeur: "Convoyeur" };
+        const parts = (plan.equipements || []).map((eq) => {
+          if (eq.type === "custom") return eq.label || "Équipement";
+          if (eq.type === "injecteur") return "Injecteur " + eq.injecteurId;
+          const ids = Array.isArray(eq.ids) ? eq.ids.join(", ") : "";
+          return (types[eq.type] || eq.type) + " " + ids;
+        });
+        const equipLabel = parts.join(" • ") || "Équipement";
+        if (typeof printFormulaire === "function") printFormulaire(plan, modele, equipLabel);
+      };
+      card.appendChild(btnPrint);
+    }
+  }
+
   // Bouton réalisé si échu ou aujourd'hui
   if (etat === "echu" || etat === "aujourdhui") {
     const validateRow = document.createElement("div");
@@ -315,7 +341,7 @@ function buildPlanCard(plan, etat) {
     valBtn.textContent = "✓ Réalisé";
     valBtn.onclick = (e) => {
       e.preventDefault();
-      const dateVal = dateInput.value || dateInput.value;
+      const dateVal = dateInput.value;
       plan.historiqueRealisations = plan.historiqueRealisations || [];
       plan.historiqueRealisations.push({
         date: dateVal,
