@@ -247,8 +247,7 @@ function createFormulaireBlock(plan, equipLabel) {
 
   // État du plan
   const echu = typeof isPlanEchu === "function" ? isPlanEchu(plan) : false;
-  const force = plan._forcerAffichageFormulaire === true;
-  if (!echu && !force) {
+  if (!echu) {
     const futur = document.createElement("div");
     futur.className = "form-futur-notice";
     futur.textContent = "Ce formulaire sera actif à partir de l'échéance.";
@@ -288,6 +287,28 @@ function createFormulaireBlock(plan, equipLabel) {
   techRow.appendChild(techLabel);
   techRow.appendChild(techInput);
   block.appendChild(techRow);
+
+  // Bouton "Tout cocher OK"
+  const btnToutOk = document.createElement("button");
+  btnToutOk.type = "button";
+  btnToutOk.className = "back-button";
+  btnToutOk.style.cssText = "width:100%;margin-bottom:8px;background:rgba(72,187,120,0.15);color:#48bb78;border:1px solid rgba(72,187,120,0.3);";
+  btnToutOk.textContent = "✓ Tout cocher OK";
+  btnToutOk.onclick = (e) => {
+    e.preventDefault();
+    modele.sections.forEach((section) => {
+      if (["ok_nok","ok_nok_urgent","ok_nok_urgent_precision"].includes(section.type)) {
+        reponses[section.id + "_val"] = "ok";
+      } else if (["ok_nok_multiple","ok_nok_gravite_multiple"].includes(section.type)) {
+        (section.items || []).forEach((_, idx) => {
+          reponses[section.id + "_item" + idx + "_val"] = "ok";
+        });
+      }
+    });
+    saveAll();
+    renderCurrentState();
+  };
+  block.appendChild(btnToutOk);
 
   // Boutons
   const btnsRow = document.createElement("div");
@@ -363,13 +384,28 @@ function validerFormulaire(plan, modele, reponses, equipLabel) {
         if (autre) detail += " — " + autre;
       }
     } else if (section.type === "ok_nok_multiple") {
-      const nokItems = (section.items || []).filter((_, idx) =>
-        reponses[section.id + "_item" + idx + "_val"] === "nok"
-      );
-      if (nokItems.length > 0) {
-        isNok = true;
-        detail = " (" + nokItems.join(", ") + ")";
-      }
+      (section.items || []).forEach((item, idx) => {
+        const itemObj = typeof item === "object" ? item : { label: item };
+        if (reponses[section.id + "_item" + idx + "_val"] === "nok") {
+          isNok = true;
+          detail += (detail ? ", " : " (") + (itemObj.label || String(item));
+        }
+      });
+      if (detail) detail += ")";
+    } else if (section.type === "ok_nok_gravite_multiple") {
+      // Chaque item a sa propre gravité — traité individuellement
+      (section.items || []).forEach((item, idx) => {
+        const itemObj = typeof item === "object" ? item : { label: item };
+        const itemKey = section.id + "_item" + idx;
+        if (reponses[itemKey + "_val"] === "nok") {
+          const grav = reponses[itemKey + "_grav"] || section.anomalie || "aPrevoir";
+          anomalies.push({
+            section: section.titre + " — " + (itemObj.label || String(item)),
+            type: grav
+          });
+        }
+      });
+      return; // Traité item par item, pas besoin de passer à isNok
     }
 
     if (isNok) {
