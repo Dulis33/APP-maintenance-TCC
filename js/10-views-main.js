@@ -192,7 +192,7 @@ function getHomeDetailFamilleFilters() {
   if (typeof getInterventionDetailedFamilleFilters === "function") {
     return getInterventionDetailedFamilleFilters();
   }
-  return ["cellule", "chariot", "groupeMoteur", "energybox", "injecteur", "sortie", "convoyeur", "manuel"];
+  return ["cellule", "chariot", "groupeMoteur", "energybox", "injecteur", "sortie", "manuel"];
 }
 
 function createCountersFromInterventionRows(rows = []) {
@@ -296,22 +296,18 @@ function buildHomeDetailFamilyCounters() {
       const rows = collectInterventionRows(getHomeDetailEtatFilters(), familles);
 
       familles.forEach((famille) => {
-        try {
-          const familyRows = (rows || []).filter((row) => row && (row?._familleDetail || row?._famille) === famille);
-          const collected = normalizeCountersObject(createCountersFromInterventionRows(familyRows));
-          const current = normalizeCountersObject(result[famille] || createEmptyCounters());
+        const familyRows = rows.filter((row) => (row?._familleDetail || row?._famille) === famille);
+        const collected = normalizeCountersObject(createCountersFromInterventionRows(familyRows));
+        const current = normalizeCountersObject(result[famille] || createEmptyCounters());
 
-          result[famille] = normalizeCountersObject({
-            critical: Math.max(current.critical, collected.critical),
-            warning: Math.max(current.warning, collected.warning),
-            control: Math.max(current.control, collected.control),
-            celluleDefaut: Math.max(current.celluleDefaut, collected.celluleDefaut),
-            celluleInhibee: Math.max(current.celluleInhibee, collected.celluleInhibee),
-            controlePreventif: Math.max(current.controlePreventif, collected.controlePreventif)
-          });
-        } catch(e) {
-          console.warn("Erreur compteur famille", famille, e);
-        }
+        result[famille] = normalizeCountersObject({
+          critical: Math.max(current.critical, collected.critical),
+          warning: Math.max(current.warning, collected.warning),
+          control: Math.max(current.control, collected.control),
+          celluleDefaut: Math.max(current.celluleDefaut, collected.celluleDefaut),
+          celluleInhibee: Math.max(current.celluleInhibee, collected.celluleInhibee),
+          controlePreventif: Math.max(current.controlePreventif, collected.controlePreventif)
+        });
       });
     } catch (error) {
       console.warn("Collecte détail anomalies indisponible pour l'accueil", error);
