@@ -554,7 +554,7 @@ function createHomeStatePill(config) {
 
   item.onclick = () => {
     setState("intervention", {
-      etatFilters: config.etatFilters,
+      etatFilters: getInterventionDefaultFilters(),
       familleFilters: config.familleFilters,
       showManualForm: false
     });

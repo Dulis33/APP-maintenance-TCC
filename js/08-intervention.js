@@ -77,12 +77,13 @@ function getFamilleOrder(famille) {
   if (famille === "trieur") return 5;
   if (famille === "injecteur") return 6;
   if (famille === "sortie") return 7;
+  if (famille === "convoyeur") return 8;
   if (famille === "manuel") return 99;
   return 50;
 }
 
 function getInterventionDetailedFamilleFilters() {
-  return ["cellule", "chariot", "groupeMoteur", "energybox", "injecteur", "sortie", "manuel"];
+  return ["cellule", "chariot", "groupeMoteur", "energybox", "injecteur", "sortie", "convoyeur", "manuel"];
 }
 
 function getInterventionFamilleLabel(famille) {
@@ -92,6 +93,7 @@ function getInterventionFamilleLabel(famille) {
   if (famille === "energybox") return "EnergyBox / Pickups";
   if (famille === "injecteur") return "Injecteurs";
   if (famille === "sortie") return "Sorties";
+  if (famille === "convoyeur") return "Convoyeurs";
   if (famille === "manuel") return "Manuel";
   if (famille === "trieur") return "Trieur complet";
   return famille || "Autre";
@@ -330,29 +332,32 @@ function collectInterventionRows(
   const rows = [];
   const aggregates = new Map();
 
-  function shouldIncludeFlags(flags) {
-    if (!Array.isArray(etatFilters) || etatFilters.length === 0) {
-      return false;
-    }
+  const ALL_ETAT_FILTERS = ["critical","warning","control","defaut","inhibee","preventif"];
+  const allEtatsActifs = ALL_ETAT_FILTERS.every((f) => etatFilters.includes(f));
+  const allFamillesActives = getInterventionDetailedFamilleFilters().every((f) => familleFilters.includes(f));
 
+  function shouldIncludeFlags(flags) {
+    if (!Array.isArray(etatFilters) || etatFilters.length === 0) return false;
+    // Tous états cochés → montrer tout ce qui a un flag
+    if (allEtatsActifs) {
+      return flags.critique || flags.aPrevoir || flags.aControler ||
+             flags.celluleDefaut || flags.celluleInhibee || flags.controlePreventif;
+    }
     return (
-      (flags.critique && etatFilters.includes("critical")) ||
-      (flags.aPrevoir && etatFilters.includes("warning")) ||
-      (flags.aControler && etatFilters.includes("control")) ||
-      (flags.celluleDefaut && etatFilters.includes("defaut")) ||
-      (flags.celluleInhibee && etatFilters.includes("inhibee")) ||
+      (flags.critique        && etatFilters.includes("critical"))   ||
+      (flags.aPrevoir        && etatFilters.includes("warning"))    ||
+      (flags.aControler      && etatFilters.includes("control"))    ||
+      (flags.celluleDefaut   && etatFilters.includes("defaut"))     ||
+      (flags.celluleInhibee  && etatFilters.includes("inhibee"))    ||
       (flags.controlePreventif && etatFilters.includes("preventif"))
     );
   }
 
   function shouldIncludeFamille(aggregate) {
-    if (!Array.isArray(familleFilters) || familleFilters.length === 0) {
-      return false;
-    }
-
+    if (!Array.isArray(familleFilters) || familleFilters.length === 0) return false;
+    if (allFamillesActives) return true;
     const detailFamille = aggregate?._familleDetail || aggregate?._famille;
     const broadFamille = aggregate?._famille;
-
     return familleFilters.includes(detailFamille) || familleFilters.includes(broadFamille);
   }
 
@@ -1123,6 +1128,76 @@ function collectInterventionRows(
     });
   }
 
+  // ---- Collecte des portions convoyeurs ----
+  if (
+    typeof CONFIG_APP !== "undefined" &&
+    typeof DATA_CONVOYEURS !== "undefined" &&
+    typeof COMMENTS_CONVOYEURS !== "undefined"
+  ) {
+    const convMin = CONFIG_APP.CONVOYEUR_MIN || 1;
+    const convMax = CONFIG_APP.CONVOYEUR_MAX || 10;
+    for (let convNumber = convMin; convNumber <= convMax; convNumber++) {
+      const key = typeof getConvoyeurKey === "function"
+        ? getConvoyeurKey(convNumber)
+        : ("convoyeur_" + convNumber);
+      const label = typeof getConvoyeurLabel === "function"
+        ? getConvoyeurLabel(convNumber)
+        : ("Portion " + convNumber);
+      const model = typeof MODELE_CONVOYEUR !== "undefined" ? MODELE_CONVOYEUR : [];
+
+      ensureLocalRows(DATA_CONVOYEURS, key, model);
+
+      const aggregate = createAggregate({
+        famille: "convoyeur",
+        familleDetail: "convoyeur",
+        gotoType: "convoyeurDetail",
+        gotoData: { convoyeurNumber: convNumber },
+        emplacement: "Convoyeurs",
+        element: "Convoyeur " + convNumber + " — " + label,
+        dateCtrl: "",
+        trainOrder: 8,
+        chariotNumber: convNumber,
+        zoneOrder: 1,
+        celluleNumber: 0,
+        pieceOrder: 0
+      });
+
+      const rowsData = DATA_CONVOYEURS[key] || [];
+      rowsData.forEach((row, index) => {
+        const modelItem = model[index] || {};
+        const pieceLabel = formatPieceLabel(modelItem.piece || "", modelItem.reference || "");
+        if (row.critique === true) {
+          applyFlagsToAggregate(aggregate, makeFlags({ critique: true }));
+          addUniqueText(aggregate._detailBuckets.critique, pieceLabel);
+        }
+        if (row.aPrevoir === true) {
+          applyFlagsToAggregate(aggregate, makeFlags({ aPrevoir: true }));
+          addUniqueText(aggregate._detailBuckets.aPrevoir, pieceLabel);
+        }
+        if (row.controlePreventif === true) {
+          applyFlagsToAggregate(aggregate, makeFlags({ controlePreventif: true }));
+        }
+      });
+
+      const comments = (COMMENTS_CONVOYEURS && COMMENTS_CONVOYEURS[key]) || [];
+      comments.forEach((commentItem, commentIndex) => {
+        const hasText = (commentItem?.text || "").trim() !== "" ||
+                        (commentItem?.elementConcerne || "").trim() !== "";
+        if (commentIndex > 0 && hasText) {
+          applyCommentStateFlagsToAggregate(aggregate, commentItem, label);
+        }
+        if (hasText) {
+          addCommentText(aggregate, commentItem.text || "", commentItem.date || "", commentItem.elementConcerne || "");
+        }
+      });
+
+      finalizeAggregate(aggregate);
+      if (shouldIncludeFamille(aggregate) && shouldIncludeFlags(aggregate._flags)) {
+        rows.push(aggregate);
+      }
+    }
+  }
+
   aggregates.forEach((aggregate) => {
     finalizeAggregate(aggregate);
 
@@ -1833,6 +1908,7 @@ function renderInterventionView(
       { key: "energybox", label: "EnergyBox" },
       { key: "injecteur", label: "Injecteurs" },
       { key: "sortie", label: "Sorties" },
+      { key: "convoyeur", label: "Convoyeurs" },
       { key: "manuel", label: "Manuel" }
     ],
     activeFamilleFilters,
