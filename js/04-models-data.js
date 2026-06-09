@@ -1,6 +1,7 @@
 let MODELE_CELLULE = [];
 let MODELE_CHARIOT_STANDARD = [];
 let MODELE_GROUPE_MOTEUR = [];
+let MODELE_CONVOYEUR = [];
 let MODELE_SORTIE = [];
 const SPECIAL_CHARIOTS = {};
 
@@ -55,11 +56,13 @@ const DATA_CELLULES = {};
 const DATA_CHARIOTS = {};
 const DATA_ENERGYBOX = {};
 const DATA_GROUPE_MOTEUR = {};
+const DATA_CONVOYEURS = {};
 const DATA_SORTIES = {};
 
 const COMMENTS_CELLULES = {};
 const COMMENTS_CHARIOTS = {};
 const COMMENTS_GROUPE_MOTEUR = {};
+const COMMENTS_CONVOYEURS = {};
 const COMMENTS_INJECTEURS = {};
 const COMMENTS_SORTIES = {};
 
@@ -275,6 +278,7 @@ function normalizePlanPreventif(plan = {}) {
 function isPlanEchu(plan) {
   if (!plan || plan.statut !== "actif") return false;
   if (!plan.prochaineEcheance) return false;
+  // Comparaison directe YYYY-MM-DD évite le bug timezone UTC
   const today = new Date();
   const todayStr = [
     today.getFullYear(),
@@ -282,22 +286,6 @@ function isPlanEchu(plan) {
     String(today.getDate()).padStart(2, "0")
   ].join("-");
   return plan.prochaineEcheance <= todayStr;
-}
-
-// Vrai si le plan est échu OU si son échéance est dans les N jours
-// Utilisé pour afficher le bouton imprimer à l'avance
-function isPlanProche(plan, joursAvance) {
-  if (!plan || plan.statut !== "actif") return false;
-  if (!plan.prochaineEcheance) return false;
-  const today = new Date();
-  const limite = new Date(today);
-  limite.setDate(limite.getDate() + (joursAvance || 7));
-  const limiteStr = [
-    limite.getFullYear(),
-    String(limite.getMonth() + 1).padStart(2, "0"),
-    String(limite.getDate()).padStart(2, "0")
-  ].join("-");
-  return plan.prochaineEcheance <= limiteStr;
 }
 
 function getPlansForEquipement(type, id, convoyeurKey, tableauType) {
