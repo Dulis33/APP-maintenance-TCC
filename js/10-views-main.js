@@ -296,18 +296,22 @@ function buildHomeDetailFamilyCounters() {
       const rows = collectInterventionRows(getHomeDetailEtatFilters(), familles);
 
       familles.forEach((famille) => {
-        const familyRows = rows.filter((row) => (row?._familleDetail || row?._famille) === famille);
-        const collected = normalizeCountersObject(createCountersFromInterventionRows(familyRows));
-        const current = normalizeCountersObject(result[famille] || createEmptyCounters());
+        try {
+          const familyRows = (rows || []).filter((row) => row && (row?._familleDetail || row?._famille) === famille);
+          const collected = normalizeCountersObject(createCountersFromInterventionRows(familyRows));
+          const current = normalizeCountersObject(result[famille] || createEmptyCounters());
 
-        result[famille] = normalizeCountersObject({
-          critical: Math.max(current.critical, collected.critical),
-          warning: Math.max(current.warning, collected.warning),
-          control: Math.max(current.control, collected.control),
-          celluleDefaut: Math.max(current.celluleDefaut, collected.celluleDefaut),
-          celluleInhibee: Math.max(current.celluleInhibee, collected.celluleInhibee),
-          controlePreventif: Math.max(current.controlePreventif, collected.controlePreventif)
-        });
+          result[famille] = normalizeCountersObject({
+            critical: Math.max(current.critical, collected.critical),
+            warning: Math.max(current.warning, collected.warning),
+            control: Math.max(current.control, collected.control),
+            celluleDefaut: Math.max(current.celluleDefaut, collected.celluleDefaut),
+            celluleInhibee: Math.max(current.celluleInhibee, collected.celluleInhibee),
+            controlePreventif: Math.max(current.controlePreventif, collected.controlePreventif)
+          });
+        } catch(e) {
+          console.warn("Erreur compteur famille", famille, e);
+        }
       });
     } catch (error) {
       console.warn("Collecte détail anomalies indisponible pour l'accueil", error);
@@ -554,7 +558,7 @@ function createHomeStatePill(config) {
 
   item.onclick = () => {
     setState("intervention", {
-      etatFilters: getInterventionDefaultFilters(),
+      etatFilters: config.etatFilters,
       familleFilters: config.familleFilters,
       showManualForm: false
     });
